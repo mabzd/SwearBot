@@ -51,8 +51,8 @@ func (dict *Dict) AddEntry(word string) *DictErr {
 	return nil
 }
 
-func (dict *Dict) IsMatch(word string) bool {
-	return matchRune(dict.tree, []rune(word))
+func (dict *Dict) Match(word string) (bool, string) {
+	return matchRune(dict.tree, []rune(word), "")
 }
 
 func addRune(current *node, runes []rune) int {
@@ -88,19 +88,19 @@ func addRune(current *node, runes []rune) int {
 	return addRune(next, runes[1:])
 }
 
-func matchRune(current *node, runes []rune) bool {
+func matchRune(current *node, runes []rune, matched string) (bool, string) {
 	if current.nodeType == wildcardNode {
-		return true
+		return true, matched
 	}
 	if len(runes) == 0 {
-		return current.nodeType == endNode
+		return current.nodeType == endNode, matched
 	}
 	currentRune := runes[0]
 	next := current.runeMap[currentRune]
 	if next == nil {
-		return false
+		return false, ""
 	}
-	return matchRune(next, runes[1:])
+	return matchRune(next, runes[1:], matched + string(currentRune))
 }
 
 func newNode() *node {

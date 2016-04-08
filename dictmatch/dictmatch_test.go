@@ -28,7 +28,7 @@ func TestMatch(t *testing.T) {
 	assertNotMatch(t, dict, "a")
 	assertNotMatch(t, dict, "ab")
 	assertNotMatch(t, dict, "abcd")
-	assertMatch(t, dict, "abc")
+	assertMatch(t, dict, "abc", "abc")
 }
 
 func TestMatchUnicode(t *testing.T) {
@@ -37,7 +37,7 @@ func TestMatchUnicode(t *testing.T) {
 
 	assertNotMatch(t, dict, "ταБЬℓ")
 	assertNotMatch(t, dict, "ταБЬℓ*")
-	assertMatch(t, dict, "ταБЬℓσ")
+	assertMatch(t, dict, "ταБЬℓσ", "ταБЬℓσ")
 }
 
 func TestMatchWildcard(t *testing.T) {
@@ -46,9 +46,9 @@ func TestMatchWildcard(t *testing.T) {
 
 	assertNotMatch(t, dict, "a")
 	assertNotMatch(t, dict, "ab")
-	assertMatch(t, dict, "abc")
-	assertMatch(t, dict, "abcd")
-	assertMatch(t, dict, "abcdefghijkl")
+	assertMatch(t, dict, "abc", "abc")
+	assertMatch(t, dict, "abcd", "abc")
+	assertMatch(t, dict, "abcdefghijkl", "abc")
 }
 
 func TestMatchUnicodeWildcard(t *testing.T) {
@@ -56,9 +56,9 @@ func TestMatchUnicodeWildcard(t *testing.T) {
 	assertAddEntry(t, dict, "ταБЬℓσ*")
 
 	assertNotMatch(t, dict, "ταБЬℓ")
-	assertMatch(t, dict, "ταБЬℓσ")
-	assertMatch(t, dict, "ταБЬℓσ*")
-	assertMatch(t, dict, "ταБЬℓσБЬasd")
+	assertMatch(t, dict, "ταБЬℓσ", "ταБЬℓσ")
+	assertMatch(t, dict, "ταБЬℓσ*", "ταБЬℓσ")
+	assertMatch(t, dict, "ταБЬℓσБЬasd", "ταБЬℓσ")
 }
 
 func TestMatchMultiple(t *testing.T) {
@@ -68,11 +68,11 @@ func TestMatchMultiple(t *testing.T) {
 	assertAddEntry(t, dict, "ab")
 	assertAddEntry(t, dict, "ac*")
 
-	assertMatch(t, dict, "a")
-	assertMatch(t, dict, "aa")
-	assertMatch(t, dict, "ab")
-	assertMatch(t, dict, "ac")
-	assertMatch(t, dict, "acc")
+	assertMatch(t, dict, "a", "a")
+	assertMatch(t, dict, "aa", "aa")
+	assertMatch(t, dict, "ab", "ab")
+	assertMatch(t, dict, "ac", "ac")
+	assertMatch(t, dict, "acc", "ac")
 	assertNotMatch(t, dict, "aaa")
 	assertNotMatch(t, dict, "abb")
 	assertNotMatch(t, dict, "abc")
@@ -131,13 +131,18 @@ func assertAddEntryError(t *testing.T, dict *Dict, word string, errType int) {
 }
 
 func assertNotMatch(t *testing.T, dict *Dict, word string) {
-	if dict.IsMatch(word) {
+	success, _ := dict.Match(word)
+	if success {
 		t.Fatalf("'%s' should not be matched", word)
 	}
 }
 
-func assertMatch(t *testing.T, dict *Dict, word string) {
-	if !dict.IsMatch(word) {
+func assertMatch(t *testing.T, dict *Dict, word string, expectedMatch string) {
+	success, match := dict.Match(word)
+	if !success {
 		t.Fatalf("'%s' should be matched", word)
+	}
+	if match != expectedMatch {
+		t.Fatalf("Actual match '%s' is not equal to expected match '%s'", match, expectedMatch)
 	}
 }
