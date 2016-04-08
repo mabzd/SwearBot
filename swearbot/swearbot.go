@@ -34,7 +34,7 @@ func (sb *SwearBot) LoadSwears() {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error reading from swar dictionary file: %v", err)
+		log.Fatalf("Error reading from swear dictionary file: %v", err)
 	}
 }
 
