@@ -5,13 +5,20 @@ import (
 	"os"
 	"io"
 	"io/ioutil"
+	"bufio"
+	"strings"
 	"github.com/nlopes/slack"
+	"./dictmatch"
 )
 
 func main() {
 	var logFile *os.File = createLogFile("log.txt")
 	defer logFile.Close()
 	log.SetOutput(io.MultiWriter(logFile, os.Stdout))
+
+	dict := dictmatch.NewDict()
+	loadDict(dict, "swears.txt")
+	log.Println("Swears loaded")
 
 	token := readBotToken("bot-token.txt")
 	api := slack.New(token)
@@ -25,12 +32,36 @@ func main() {
 	log.Println("Finish")
 }
 
-func createLogFile(name string) *os.File {
-	logFile, err := os.OpenFile(name, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+func createLogFile(fileName string) *os.File {
+	logFile, err := os.OpenFile(fileName, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("Error opening file: %v", err)
+		log.Fatalf("Error opening log file: %v", err)
 	}
 	return logFile
+}
+
+func loadDict(dict *dictmatch.Dict, fileName string) {
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Error opening swear dictionary file: %v", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		word := normalizeWord(scanner.Text())
+		dict.AddEntry(word)
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatalf("Error reading from swar dictionary file: %v", err)
+	}
+}
+
+func normalizeWord(word string) string {
+	word = strings.Trim(word, " \n\r")
+	word = strings.ToLower(word)
+	return word
 }
 
 func readBotToken(fileName string) string {
