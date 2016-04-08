@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"io"
@@ -28,7 +29,7 @@ func main() {
 	go rtm.ManageConnection()
 
 	log.Println("Start")
-	processEvents(rtm)
+	processEvents(rtm, dict)
 	log.Println("Finish")
 }
 
@@ -81,7 +82,7 @@ func logInfo(info *slack.Info) {
 	}
 }
 
-func processEvents(rtm *slack.RTM) {
+func processEvents(rtm *slack.RTM, dict *dictmatch.Dict) {
 	for {
 		select {
 		case msg := <- rtm.IncomingEvents:
@@ -94,7 +95,11 @@ func processEvents(rtm *slack.RTM) {
 				logInfo(ev.Info)
 
 			case *slack.MessageEvent:
-				//rtm.SendMessage(rtm.NewOutgoingMessage("Test...", ev.Channel))
+				swears := findSwears(ev.Text, dict)
+				if len(swears) > 0 {
+					response := fmt.Sprintf("Following swears found: *%s*", strings.Join(swears, "*, *"))
+					rtm.SendMessage(rtm.NewOutgoingMessage(response, ev.Channel))
+				}
 
 			case *slack.PresenceChangeEvent:
 				// Ignore presence change
@@ -115,3 +120,17 @@ func processEvents(rtm *slack.RTM) {
 		}
 	}
 }
+
+func findSwears(message string, dict *dictmatch.Dict) []string {
+	swears := make([]string, 0)
+	words := strings.Fields(message)
+	for _, word := range words {
+		word = normalizeWord(word)
+		success, _ := dict.Match(word)
+		if success {
+			swears = append(swears, word)
+		}
+	}
+	return swears
+}
+
