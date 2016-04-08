@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"io"
 	"io/ioutil"
-	"strings"
 	"github.com/nlopes/slack"
 	"./swearbot"
 )
@@ -70,9 +68,8 @@ func processEvents(rtm *slack.RTM) {
 				logInfo(ev.Info)
 
 			case *slack.MessageEvent:
-				swears := swearBot.FindSwears(ev.Text)
-				if len(swears) > 0 {
-					response := fmt.Sprintf("Following swears found: *%s*", strings.Join(swears, "*, *"))
+				response := swearBot.ParseMessage(ev.Text)
+				if response != "" {
 					rtm.SendMessage(rtm.NewOutgoingMessage(response, ev.Channel))
 				}
 
