@@ -6,20 +6,15 @@ import (
 	"os"
 	"io"
 	"io/ioutil"
-	"bufio"
 	"strings"
 	"github.com/nlopes/slack"
-	"./dictmatch"
+	"./swearbot"
 )
 
 func main() {
 	var logFile *os.File = createLogFile("log.txt")
 	defer logFile.Close()
 	log.SetOutput(io.MultiWriter(logFile, os.Stdout))
-
-	dict := dictmatch.NewDict()
-	loadDict(dict, "swears.txt")
-	log.Println("Swears loaded")
 
 	token := readBotToken("bot-token.txt")
 	api := slack.New(token)
@@ -29,7 +24,7 @@ func main() {
 	go rtm.ManageConnection()
 
 	log.Println("Start")
-	processEvents(rtm, dict)
+	processEvents(rtm)
 	log.Println("Finish")
 }
 
@@ -39,30 +34,6 @@ func createLogFile(fileName string) *os.File {
 		log.Fatalf("Error opening log file: %v", err)
 	}
 	return logFile
-}
-
-func loadDict(dict *dictmatch.Dict, fileName string) {
-	file, err := os.Open(fileName)
-	if err != nil {
-		log.Fatalf("Error opening swear dictionary file: %v", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		word := normalizeWord(scanner.Text())
-		dict.AddEntry(word)
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error reading from swar dictionary file: %v", err)
-	}
-}
-
-func normalizeWord(word string) string {
-	word = strings.Trim(word, " \n\r")
-	word = strings.ToLower(word)
-	return word
 }
 
 func readBotToken(fileName string) string {
@@ -82,7 +53,11 @@ func logInfo(info *slack.Info) {
 	}
 }
 
-func processEvents(rtm *slack.RTM, dict *dictmatch.Dict) {
+func processEvents(rtm *slack.RTM) {
+	swearBot := swearbot.NewSwearBot("swears.txt")
+	swearBot.LoadSwears()
+	log.Println("Swears loaded")
+
 	for {
 		select {
 		case msg := <- rtm.IncomingEvents:
@@ -95,7 +70,7 @@ func processEvents(rtm *slack.RTM, dict *dictmatch.Dict) {
 				logInfo(ev.Info)
 
 			case *slack.MessageEvent:
-				swears := findSwears(ev.Text, dict)
+				swears := swearBot.FindSwears(ev.Text)
 				if len(swears) > 0 {
 					response := fmt.Sprintf("Following swears found: *%s*", strings.Join(swears, "*, *"))
 					rtm.SendMessage(rtm.NewOutgoingMessage(response, ev.Channel))
@@ -120,17 +95,3 @@ func processEvents(rtm *slack.RTM, dict *dictmatch.Dict) {
 		}
 	}
 }
-
-func findSwears(message string, dict *dictmatch.Dict) []string {
-	swears := make([]string, 0)
-	words := strings.Fields(message)
-	for _, word := range words {
-		word = normalizeWord(word)
-		success, _ := dict.Match(word)
-		if success {
-			swears = append(swears, word)
-		}
-	}
-	return swears
-}
-
