@@ -2,6 +2,7 @@ package dictmatch
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Errors
@@ -11,6 +12,7 @@ const (
 	WordExistErr = 2
 	WildcardOverlappedByWordErr = 3
 	WildcardRootExistErr = 4
+	InvalidWildardPlacementErr = 5
 )
 
 // Node types
@@ -41,7 +43,7 @@ func NewDict() *Dict {
 }
 
 func (dict *Dict) AddEntry(word string) *DictErr {
-	errType := addRune(dict.tree, []rune(word))
+	errType := dict.addEntry(word)
 	if errType != Success {
 		return &DictErr {
 			Desc: fmt.Sprintf("Error when adding '%s': %s", word, newDictErrDesc(errType)),
@@ -53,6 +55,17 @@ func (dict *Dict) AddEntry(word string) *DictErr {
 
 func (dict *Dict) Match(word string) (bool, string) {
 	return matchRune(dict.tree, []rune(word), "")
+}
+
+func (dict *Dict) addEntry(word string) int {
+	wildcards := strings.Count(word, "*")
+	if wildcards > 1 {
+		return InvalidWildardPlacementErr
+	}
+	if wildcards == 1 && !strings.HasSuffix(word, "*") {
+		return InvalidWildardPlacementErr
+	}
+	return addRune(dict.tree, []rune(word))
 }
 
 func addRune(current *node, runes []rune) int {
@@ -120,6 +133,8 @@ func newDictErrDesc(errType int) string {
 		return "This wildcard entry is overlapped by existing word."
 	case WildcardRootExistErr:
 		return "This wildcard entry's root already exist."
+	case InvalidWildardPlacementErr:
+		return "Wildcard can be placed only at the end of the root word."
 	default:
 		panic(fmt.Sprintf("Unknown error type: %d", errType))
 	}

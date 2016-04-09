@@ -18,6 +18,7 @@ type BotConfig struct {
 	OnAddRuleFileReadErr string
 	OnAddRuleConflictErr string
 	OnAddRuleSaveErr string
+	OnIvalidWildcardErr string
 }
 
 type SwearBot struct {
@@ -80,6 +81,9 @@ func (sb *SwearBot) addRule(rule string) error {
 	confilctErr := sb.dict.AddEntry(normRule)
 	if confilctErr != nil {
 		log.Printf("Add rule: %s", confilctErr.Desc)
+		if (confilctErr.ErrType == dictmatch.InvalidWildardPlacementErr) {
+			return errors.New(sb.config.OnIvalidWildcardErr)
+		}
 		return errors.New(sb.config.OnAddRuleConflictErr)
 	}
 

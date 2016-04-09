@@ -46,6 +46,15 @@ func TestAddRuleConflictErr(t *testing.T) {
 	assertResponse(t, sb, "add rule: ab*", "ConflictErr")
 }
 
+func TestAddRuleInvalidWildcardErr(t *testing.T) {
+	config := createBotConfig()
+	tmpfile := createTempDict()
+	defer os.Remove(tmpfile.Name())
+
+	sb := createBot(tmpfile, config)
+	assertResponse(t, sb, "add rule: a*b", "InvalidWildcard")
+}
+
 func createBotConfig() BotConfig {
 	return BotConfig {
 		AddRuleRegex: "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*$",
@@ -54,6 +63,7 @@ func createBotConfig() BotConfig {
 		OnAddRuleFileReadErr: "FileReadErr",
 		OnAddRuleConflictErr: "ConflictErr",
 		OnAddRuleSaveErr: "SaveErr",
+		OnIvalidWildcardErr: "InvalidWildcard",
 	}
 }
 

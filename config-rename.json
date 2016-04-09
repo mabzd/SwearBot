@@ -6,6 +6,7 @@
 		"OnAddRuleResponse": "Rule '%s' added.",
 		"OnAddRuleFileReadErr": "Error when reading database!",
 		"OnAddRuleConflictErr": "Similar rule already exists!",
-		"OnAddRuleSaveErr": "Error when saving to database!"
+		"OnAddRuleSaveErr": "Error when saving to database!",
+		"OnIvalidWildcardErr": "Invalid wildcard placement!"
 	}
 }

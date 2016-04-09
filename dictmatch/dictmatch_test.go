@@ -108,6 +108,15 @@ func TestAddDuplicatedWildcard(t *testing.T) {
 	assertAddEntryError(t, dict, "abc*", WordOverlappedByWildcardErr)
 }
 
+func TestInvalidWildcardPlacement(t *testing.T) {
+	dict := NewDict()
+	assertAddEntryError(t, dict, "**a", InvalidWildardPlacementErr)
+	assertAddEntryError(t, dict, "*a", InvalidWildardPlacementErr)
+	assertAddEntryError(t, dict, "a*b", InvalidWildardPlacementErr)
+	assertAddEntryError(t, dict, "a**", InvalidWildardPlacementErr)
+	assertAddEntryError(t, dict, "**", InvalidWildardPlacementErr)
+}
+
 func assertAddEntry(t *testing.T, dict *Dict, word string) {
 	err := dict.AddEntry(word)
 	if err != nil {
