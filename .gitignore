@@ -3,3 +3,4 @@ bin/*
 log.txt
 swears-full.txt
 config.json
+log/*
