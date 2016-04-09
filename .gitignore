@@ -1,3 +1,4 @@
+bin/*
 *.exe
 log.txt
 swears-full.txt
