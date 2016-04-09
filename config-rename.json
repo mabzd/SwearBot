@@ -1,7 +1,11 @@
 {
 	"Token": "<SLACK-BOT-TOKEN-HERE>",
 	"BotConfig": {
-		"AddRuleRegex": "/^\\s*add rule: ([a-z*]+)\\s*$/i",
-		"OnSwearsFoundResponse": "Following swears found: %s"
+		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*",
+		"OnSwearsFoundResponse": "Following swears found: %s",
+		"OnAddRuleResponse": "Rule '%s' added.",
+		"OnAddRuleFileReadErr": "Error when reading database!",
+		"OnAddRuleConflictErr": "Similar rule already exists!",
+		"OnAddRuleSaveErr": "Error when saving to database!"
 	}
 }

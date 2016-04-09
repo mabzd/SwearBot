@@ -1,6 +1,7 @@
 package swearbot
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -13,6 +14,10 @@ import (
 type BotConfig struct {
 	AddRuleRegex string
 	OnSwearsFoundResponse string
+	OnAddRuleResponse string
+	OnAddRuleFileReadErr string
+	OnAddRuleConflictErr string
+	OnAddRuleSaveErr string
 }
 
 type SwearBot struct {
@@ -50,6 +55,44 @@ func (sb *SwearBot) LoadSwears() {
 }
 
 func (sb *SwearBot) ParseMessage(message string) string {
+	rules := sb.addRuleRegex.FindAllStringSubmatch(message, 1)
+	if rules != nil {
+		rule := rules[0][1]
+		err := sb.addRule(rule)
+		if err != nil {
+			return err.Error()
+		}
+		return fmt.Sprintf(sb.config.OnAddRuleResponse, rule)
+	}
+	return sb.parseSwears(message)
+}
+
+func (sb *SwearBot) addRule(rule string) error {
+	file, fileReadErr := os.OpenFile(sb.dictFileName, os.O_RDWR | os.O_APPEND, 0666)
+	if fileReadErr != nil {
+		log.Printf("Add rule: Cannot open swear dictionary file: %v", fileReadErr)
+		return errors.New(sb.config.OnAddRuleFileReadErr)
+	}
+	defer file.Close()
+
+	normRule := normalizeWord(rule)
+
+	confilctErr := sb.dict.AddEntry(normRule)
+	if confilctErr != nil {
+		log.Printf("Add rule: %s", confilctErr.Desc)
+		return errors.New(sb.config.OnAddRuleConflictErr)
+	}
+
+	_, saveErr := file.WriteString(fmt.Sprintf("%s\n", normRule))
+	if saveErr != nil {
+		log.Printf("Add rule: Cannot write string '%s' to swear dictionary file: %v", normRule, saveErr)
+		return errors.New(sb.config.OnAddRuleSaveErr)
+	}
+
+	return nil
+}
+
+func (sb *SwearBot) parseSwears(message string) string {
 	swears := sb.findSwears(message)
 	if len(swears) > 0 {
 		swearsLine := fmt.Sprintf("*%s*", strings.Join(swears, "*, *"))
@@ -57,22 +100,6 @@ func (sb *SwearBot) ParseMessage(message string) string {
 		return response
 	}
 	return ""
-}
-
-func (sb *SwearBot) addSwear(swear string) {
-	sb.addSwears([]string { swear })
-}
-
-func (sb *SwearBot) addSwears(swears []string) {
-	file, err := os.OpenFile(sb.dictFileName, os.O_RDWR | os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("Error opening swear dictionary file: %v", err)
-	}
-	defer file.Close()
-
-	for _, swear := range swears {
-		file.WriteString(fmt.Sprintf("%s\n", normalizeWord(swear)))
-	}
 }
 
 func (sb *SwearBot) findSwears(message string) []string {
@@ -86,10 +113,6 @@ func (sb *SwearBot) findSwears(message string) []string {
 		}
 	}
 	return swears
-}
-
-func addSwearToFile(swear string) {
-
 }
 
 func normalizeWord(word string) string {
