@@ -5,24 +5,31 @@ import (
 	"os"
 	"io"
 	"io/ioutil"
+	"encoding/json"
 	"github.com/nlopes/slack"
 	"./swearbot"
 )
+
+type Config struct {
+	Token string
+	BotConfig swearbot.BotConfig
+}
 
 func main() {
 	var logFile *os.File = createLogFile("log.txt")
 	defer logFile.Close()
 	log.SetOutput(io.MultiWriter(logFile, os.Stdout))
 
-	token := readBotToken("bot-token.txt")
-	api := slack.New(token)
+	config := readConfig("config.json")
+
+	api := slack.New(config.Token)
 	api.SetDebug(false)
 
 	rtm := api.NewRTM()
 	go rtm.ManageConnection()
 
 	log.Println("Start")
-	processEvents(rtm)
+	processEvents(rtm, config)
 	log.Println("Finish")
 }
 
@@ -34,12 +41,17 @@ func createLogFile(fileName string) *os.File {
 	return logFile
 }
 
-func readBotToken(fileName string) string {
+func readConfig(fileName string) Config {
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		log.Fatalf("Cannot read bot token from file '%s'", fileName)
+		log.Fatalf("Cannot read config from file '%s': %s", fileName, err)
 	}
-	return string(bytes)
+	var config Config
+	err = json.Unmarshal(bytes, &config)
+	if err != nil {
+		log.Fatalf("Error when parsing config JSON: %s", err)
+	}
+	return config
 }
 
 func logInfo(info *slack.Info) {
@@ -51,8 +63,8 @@ func logInfo(info *slack.Info) {
 	}
 }
 
-func processEvents(rtm *slack.RTM) {
-	swearBot := swearbot.NewSwearBot("swears.txt")
+func processEvents(rtm *slack.RTM, config Config) {
+	swearBot := swearbot.NewSwearBot("swears.txt", config.BotConfig)
 	swearBot.LoadSwears()
 	log.Println("Swears loaded")
 

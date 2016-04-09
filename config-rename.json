@@ -1,0 +1,7 @@
+{
+	"Token": "<SLACK-BOT-TOKEN-HERE>",
+	"BotConfig": {
+		"AddRuleRegex": "/^\\s*add rule: ([a-z*]+)\\s*$/i",
+		"OnSwearsFoundResponse": "Following swears found: %s"
+	}
+}

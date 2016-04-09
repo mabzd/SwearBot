@@ -1,4 +1,4 @@
 *.exe
 log.txt
 swears-full.txt
-bot-token.txt
+config.json

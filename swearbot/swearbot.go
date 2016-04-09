@@ -10,17 +10,24 @@ import (
 	"../dictmatch"
 )
 
-var AddSwearRegex *regexp.Regexp = regexp.MustCompile("/^\\s*add rule: ([a-z*]+)\\s*$/i")
+type BotConfig struct {
+	AddRuleRegex string
+	OnSwearsFoundResponse string
+}
 
 type SwearBot struct {
 	dict *dictmatch.Dict
 	dictFileName string
+	addRuleRegex *regexp.Regexp
+	config BotConfig
 }
 
-func NewSwearBot(fileName string) *SwearBot {
+func NewSwearBot(fileName string, botConfig BotConfig) *SwearBot {
 	return &SwearBot {
 		dict: dictmatch.NewDict(),
 		dictFileName: fileName,
+		addRuleRegex: regexp.MustCompile(botConfig.AddRuleRegex),
+		config: botConfig,
 	}
 }
 
@@ -45,7 +52,8 @@ func (sb *SwearBot) LoadSwears() {
 func (sb *SwearBot) ParseMessage(message string) string {
 	swears := sb.findSwears(message)
 	if len(swears) > 0 {
-		response := fmt.Sprintf("Following swears found: *%s*", strings.Join(swears, "*, *"))
+		swearsLine := fmt.Sprintf("*%s*", strings.Join(swears, "*, *"))
+		response := fmt.Sprintf(sb.config.OnSwearsFoundResponse, swearsLine)
 		return response
 	}
 	return ""
