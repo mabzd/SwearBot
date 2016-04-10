@@ -1,2 +1,3 @@
 #!/bin/sh
-./bin/swbot.exe
+cd ./bin
+./swbot.exe

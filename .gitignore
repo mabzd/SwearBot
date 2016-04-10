@@ -1,6 +1,3 @@
 bin/*
-*.exe
-log.txt
-swears-full.txt
-config.json
 log/*
+tmp/*
