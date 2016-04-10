@@ -1,72 +1,46 @@
 package swearbot
 
 import (
-	"errors"
 	"fmt"
-	"log"
-	"os"
-	"bufio"
 	"strings"
 	"regexp"
-	"../dictmatch"
+	"../swears"
+	"../stats"
 )
 
 type BotConfig struct {
 	AddRuleRegex string
-	OnSwearsFoundResponse string
 	OnAddRuleResponse string
-	OnAddRuleFileReadErr string
-	OnAddRuleConflictErr string
-	OnAddRuleSaveErr string
-	OnIvalidWildcardErr string
-	OnStatsFileCreateErr string
-	OnStatsFileReadErr string
-	OnStatsUnmarshalErr string
-	OnStatsMarshalErr string
-	OnStatsSaveErr string
+	OnSwearsFoundResponse string
+	SwearsConfig swears.SwearsConfig
+	StatsConfig stats.StatsConfig
 }
 
 type SwearBot struct {
-	dict *dictmatch.Dict
-	dictFileName string
-	statsFileName string
+	swears *swears.Swears
+	stats *stats.Stats
 	addRuleRegex *regexp.Regexp
 	config BotConfig
 }
 
-func NewSwearBot(dictFileName string, statsFileName string, botConfig BotConfig) *SwearBot {
+func NewSwearBot(dictFileName string, statsFileName string, config BotConfig) *SwearBot {
 	return &SwearBot {
-		dict: dictmatch.NewDict(),
-		dictFileName: dictFileName,
-		statsFileName: statsFileName,
-		addRuleRegex: regexp.MustCompile(botConfig.AddRuleRegex),
-		config: botConfig,
+		swears: swears.NewSwears(dictFileName, config.SwearsConfig),
+		stats: stats.NewStats(statsFileName, config.StatsConfig),
+		addRuleRegex: regexp.MustCompile(config.AddRuleRegex),
+		config: config,
 	}
 }
 
 func (sb *SwearBot) LoadSwears() {
-	file, err := os.Open(sb.dictFileName)
-	if err != nil {
-		log.Fatalf("Error opening swear dictionary file: %v", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		word := normalizeWord(scanner.Text())
-		sb.dict.AddEntry(word)
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error reading from swear dictionary file: %v", err)
-	}
+	sb.swears.LoadSwears()
 }
 
 func (sb *SwearBot) ParseMessage(message string) string {
 	rules := sb.addRuleRegex.FindAllStringSubmatch(message, 1)
 	if rules != nil {
 		rule := rules[0][1]
-		err := sb.addRule(rule)
+		err := sb.swears.AddRule(rule)
 		if err != nil {
 			return err.Error()
 		}
@@ -75,60 +49,13 @@ func (sb *SwearBot) ParseMessage(message string) string {
 	return sb.parseSwears(message)
 }
 
-func (sb *SwearBot) addRule(rule string) error {
-	file, fileReadErr := os.OpenFile(sb.dictFileName, os.O_RDWR | os.O_APPEND, 0666)
-	if fileReadErr != nil {
-		log.Printf("Add rule: Cannot open swear dictionary file: %v", fileReadErr)
-		return errors.New(sb.config.OnAddRuleFileReadErr)
-	}
-	defer file.Close()
-
-	normRule := normalizeWord(rule)
-
-	confilctErr := sb.dict.AddEntry(normRule)
-	if confilctErr != nil {
-		log.Printf("Add rule: %s", confilctErr.Desc)
-		if (confilctErr.ErrType == dictmatch.InvalidWildardPlacementErr) {
-			return errors.New(sb.config.OnIvalidWildcardErr)
-		}
-		return errors.New(sb.config.OnAddRuleConflictErr)
-	}
-
-	_, saveErr := file.WriteString(fmt.Sprintf("%s\n", normRule))
-	if saveErr != nil {
-		log.Printf("Add rule: Cannot write string '%s' to swear dictionary file: %v", normRule, saveErr)
-		return errors.New(sb.config.OnAddRuleSaveErr)
-	}
-
-	return nil
-}
-
 func (sb *SwearBot) parseSwears(message string) string {
-	swears := sb.findSwears(message)
+	swears := sb.swears.FindSwears(message)
 	if len(swears) > 0 {
 		swearsLine := fmt.Sprintf("*%s*", strings.Join(swears, "*, *"))
 		response := fmt.Sprintf(sb.config.OnSwearsFoundResponse, swearsLine)
 		return response
 	}
 	return ""
-}
-
-func (sb *SwearBot) findSwears(message string) []string {
-	swears := make([]string, 0)
-	words := strings.Fields(message)
-	for _, word := range words {
-		word = normalizeWord(word)
-		success, _ := sb.dict.Match(word)
-		if success {
-			swears = append(swears, word)
-		}
-	}
-	return swears
-}
-
-func normalizeWord(word string) string {
-	word = strings.Trim(word, " \n\r")
-	word = strings.ToLower(word)
-	return word
 }
 

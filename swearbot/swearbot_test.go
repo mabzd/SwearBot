@@ -6,6 +6,7 @@ import (
 	"os"
 	"io/ioutil"
 	"testing"
+	"../swears"
 )
 
 func init() {
@@ -64,10 +65,12 @@ func createBotConfig() BotConfig {
 		AddRuleRegex: "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*$",
 		OnSwearsFoundResponse: "Swears: %s",
 		OnAddRuleResponse: "Rule: %s",
-		OnAddRuleFileReadErr: "FileReadErr",
-		OnAddRuleConflictErr: "ConflictErr",
-		OnAddRuleSaveErr: "SaveErr",
-		OnIvalidWildcardErr: "InvalidWildcard",
+		SwearsConfig: swears.SwearsConfig {
+			OnAddRuleFileReadErr: "FileReadErr",
+			OnAddRuleConflictErr: "ConflictErr",
+			OnAddRuleSaveErr: "SaveErr",
+			OnIvalidWildcardErr: "InvalidWildcard",
+		},
 	}
 }
 

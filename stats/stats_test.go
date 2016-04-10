@@ -1,4 +1,4 @@
-package swearbot
+package stats
 
 import (
 	"os"
@@ -11,9 +11,9 @@ func TestAddSwears(t *testing.T) {
 	tmpFilePath := createTmpFilePath(t)
 	defer os.Remove(tmpFilePath)
 
-	sb := createStatsBot(tmpFilePath)
-	assertAddSwears(t, sb, 1, 2016, "user1", 3)
-	assertAddSwears(t, sb, 1, 2016, "user1", 2)
+	st := createStats(tmpFilePath)
+	assertAddSwearCount(t, st, 1, 2016, "user1", 3)
+	assertAddSwearCount(t, st, 1, 2016, "user1", 2)
 
 	expected := []*User {
 		&User {
@@ -22,19 +22,19 @@ func TestAddSwears(t *testing.T) {
 		},
 	}
 
-	assertMonthlyRank(t, sb, 1, 2016, expected)
+	assertMonthlyRank(t, st, 1, 2016, expected)
 }
 
 func TestRankOrder(t *testing.T) {
 	tmpFilePath := createTmpFilePath(t)
 	defer os.Remove(tmpFilePath)
 
-	sb := createStatsBot(tmpFilePath)
-	assertAddSwears(t, sb, 1, 2016, "user1", 3)
-	assertAddSwears(t, sb, 1, 2016, "user2", 4)
-	assertAddSwears(t, sb, 1, 2016, "user1", 2)
-	assertAddSwears(t, sb, 1, 2016, "user3", 6)
-	assertAddSwears(t, sb, 2, 2016, "user1", 10)
+	st := createStats(tmpFilePath)
+	assertAddSwearCount(t, st, 1, 2016, "user1", 3)
+	assertAddSwearCount(t, st, 1, 2016, "user2", 4)
+	assertAddSwearCount(t, st, 1, 2016, "user1", 2)
+	assertAddSwearCount(t, st, 1, 2016, "user3", 6)
+	assertAddSwearCount(t, st, 2, 2016, "user1", 10)
 
 	expected := []*User {
 		&User {
@@ -51,17 +51,17 @@ func TestRankOrder(t *testing.T) {
 		},
 	}
 
-	assertMonthlyRank(t, sb, 1, 2016, expected)
+	assertMonthlyRank(t, st, 1, 2016, expected)
 }
 
 func TestUnknownMonth(t *testing.T) {
 	tmpFilePath := createTmpFilePath(t)
 	defer os.Remove(tmpFilePath)
 
-	sb := createStatsBot(tmpFilePath)
-	assertAddSwears(t, sb, 1, 2016, "user1", 1)
+	st := createStats(tmpFilePath)
+	assertAddSwearCount(t, st, 1, 2016, "user1", 1)
 
-	assertMonthlyRank(t, sb, 2, 2016, []*User {})
+	assertMonthlyRank(t, st, 2, 2016, []*User {})
 }
 
 func createTmpFilePath(t *testing.T) string {
@@ -75,19 +75,19 @@ func createTmpFilePath(t *testing.T) string {
 	return path
 }
 
-func createStatsBot(tmpFilePath string) *SwearBot {
-	return NewSwearBot("", tmpFilePath, BotConfig {})
+func createStats(tmpFilePath string) *Stats {
+	return NewStats(tmpFilePath, StatsConfig {})
 }
 
-func assertAddSwears(t *testing.T, sb *SwearBot, m int, y int, u string, n int) {
-	err := sb.AddSwears(m, y, u, n)
+func assertAddSwearCount(t *testing.T, st *Stats, m int, y int, u string, n int) {
+	err := st.AddSwearCount(m, y, u, n)
 	if err != nil {
 		t.Fatalf("Expected no error when adding swears but got %s", err)
 	}
 }
 
-func assertMonthlyRank(t *testing.T, sb *SwearBot, m int, y int, expected []*User) {
-	users, err := sb.GetMonthlyRank(m, y)
+func assertMonthlyRank(t *testing.T, st *Stats, m int, y int, expected []*User) {
+	users, err := st.GetMonthlyRank(m, y)
 	if err != nil {
 		t.Fatalf("Expected no error when getting monthly rank but got %s", err)
 	}
