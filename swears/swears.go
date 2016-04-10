@@ -1,33 +1,33 @@
 package swears
 
 import (
-	"os"
-	"log"
+	"../dictmatch"
 	"bufio"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"strings"
-	"../dictmatch"
 )
 
 type Swears struct {
-	dict *dictmatch.Dict
+	dict         *dictmatch.Dict
 	dictFileName string
-	config SwearsConfig
+	config       SwearsConfig
 }
 
 type SwearsConfig struct {
 	OnAddRuleFileReadErr string
 	OnAddRuleConflictErr string
-	OnAddRuleSaveErr string
-	OnIvalidWildcardErr string
+	OnAddRuleSaveErr     string
+	OnIvalidWildcardErr  string
 }
 
 func NewSwears(dictFileName string, config SwearsConfig) *Swears {
-	return &Swears {
-		dict: dictmatch.NewDict(),
+	return &Swears{
+		dict:         dictmatch.NewDict(),
 		dictFileName: dictFileName,
-		config: config,
+		config:       config,
 	}
 }
 
@@ -50,7 +50,7 @@ func (sw *Swears) LoadSwears() {
 }
 
 func (sw *Swears) AddRule(rule string) error {
-	file, fileReadErr := os.OpenFile(sw.dictFileName, os.O_RDWR | os.O_APPEND, 0666)
+	file, fileReadErr := os.OpenFile(sw.dictFileName, os.O_RDWR|os.O_APPEND, 0666)
 	if fileReadErr != nil {
 		log.Printf("Add rule: Cannot open swear dictionary file: %v", fileReadErr)
 		return errors.New(sw.config.OnAddRuleFileReadErr)
@@ -62,7 +62,7 @@ func (sw *Swears) AddRule(rule string) error {
 	confilctErr := sw.dict.AddEntry(normRule)
 	if confilctErr != nil {
 		log.Printf("Add rule: %s", confilctErr.Desc)
-		if (confilctErr.ErrType == dictmatch.InvalidWildardPlacementErr) {
+		if confilctErr.ErrType == dictmatch.InvalidWildardPlacementErr {
 			return errors.New(sw.config.OnIvalidWildcardErr)
 		}
 		return errors.New(sw.config.OnAddRuleConflictErr)

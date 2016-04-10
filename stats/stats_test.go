@@ -1,10 +1,10 @@
 package stats
 
 import (
-	"os"
 	"io/ioutil"
-	"testing"
+	"os"
 	"reflect"
+	"testing"
 )
 
 func TestAddSwears(t *testing.T) {
@@ -15,9 +15,9 @@ func TestAddSwears(t *testing.T) {
 	assertAddSwearCount(t, st, 1, 2016, "user1", 3)
 	assertAddSwearCount(t, st, 1, 2016, "user1", 2)
 
-	expected := []*User {
-		&User {
-			Name: "user1",
+	expected := []*User{
+		&User{
+			Name:       "user1",
 			SwearCount: 5,
 		},
 	}
@@ -36,17 +36,17 @@ func TestRankOrder(t *testing.T) {
 	assertAddSwearCount(t, st, 1, 2016, "user3", 6)
 	assertAddSwearCount(t, st, 2, 2016, "user1", 10)
 
-	expected := []*User {
-		&User {
-			Name: "user3",
+	expected := []*User{
+		&User{
+			Name:       "user3",
 			SwearCount: 6,
 		},
-		&User {
-			Name: "user1",
+		&User{
+			Name:       "user1",
 			SwearCount: 5,
 		},
-		&User {
-			Name: "user2",
+		&User{
+			Name:       "user2",
 			SwearCount: 4,
 		},
 	}
@@ -61,7 +61,7 @@ func TestUnknownMonth(t *testing.T) {
 	st := createStats(tmpFilePath)
 	assertAddSwearCount(t, st, 1, 2016, "user1", 1)
 
-	assertMonthlyRank(t, st, 2, 2016, []*User {})
+	assertMonthlyRank(t, st, 2, 2016, []*User{})
 }
 
 func createTmpFilePath(t *testing.T) string {
@@ -76,7 +76,7 @@ func createTmpFilePath(t *testing.T) string {
 }
 
 func createStats(tmpFilePath string) *Stats {
-	return NewStats(tmpFilePath, StatsConfig {})
+	return NewStats(tmpFilePath, StatsConfig{})
 }
 
 func assertAddSwearCount(t *testing.T, st *Stats, m int, y int, u string, n int) {

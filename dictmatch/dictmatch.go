@@ -7,18 +7,18 @@ import (
 
 // Errors
 const (
-	Success = 0
+	Success                     = 0
 	WordOverlappedByWildcardErr = 1
-	WordExistErr = 2
+	WordExistErr                = 2
 	WildcardOverlappedByWordErr = 3
-	WildcardRootExistErr = 4
-	InvalidWildardPlacementErr = 5
+	WildcardRootExistErr        = 4
+	InvalidWildardPlacementErr  = 5
 )
 
 // Node types
 const (
-	emptyNode = 0
-	endNode = 1
+	emptyNode    = 0
+	endNode      = 1
 	wildcardNode = 2
 )
 
@@ -27,17 +27,17 @@ type Dict struct {
 }
 
 type DictErr struct {
-	Desc string
+	Desc    string
 	ErrType int
 }
 
 type node struct {
-	runeMap map[rune]*node
+	runeMap  map[rune]*node
 	nodeType int
 }
 
 func NewDict() *Dict {
-	return &Dict {
+	return &Dict{
 		tree: newNode(),
 	}
 }
@@ -45,8 +45,8 @@ func NewDict() *Dict {
 func (dict *Dict) AddEntry(word string) *DictErr {
 	errType := dict.addEntry(word)
 	if errType != Success {
-		return &DictErr {
-			Desc: fmt.Sprintf("Error when adding '%s': %s", word, newDictErrDesc(errType)),
+		return &DictErr{
+			Desc:    fmt.Sprintf("Error when adding '%s': %s", word, newDictErrDesc(errType)),
 			ErrType: errType,
 		}
 	}
@@ -87,7 +87,7 @@ func addRune(current *node, runes []rune) int {
 		if current.nodeType == endNode {
 			return WildcardRootExistErr
 		}
-		current.nodeType = wildcardNode;
+		current.nodeType = wildcardNode
 		return Success
 	}
 	if current.runeMap == nil {
@@ -113,18 +113,18 @@ func matchRune(current *node, runes []rune, matched string) (bool, string) {
 	if next == nil {
 		return false, ""
 	}
-	return matchRune(next, runes[1:], matched + string(currentRune))
+	return matchRune(next, runes[1:], matched+string(currentRune))
 }
 
 func newNode() *node {
-	return &node {
-		runeMap: nil,
+	return &node{
+		runeMap:  nil,
 		nodeType: emptyNode,
 	}
 }
 
 func newDictErrDesc(errType int) string {
-	switch (errType) {
+	switch errType {
 	case WordOverlappedByWildcardErr:
 		return "Word is overlapped by existing wildcard entry."
 	case WordExistErr:

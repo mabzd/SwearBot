@@ -1,17 +1,17 @@
 package main
 
 import (
-	"log"
-	"os"
-	"io"
-	"io/ioutil"
+	"./swearbot"
 	"encoding/json"
 	"github.com/nlopes/slack"
-	"./swearbot"
+	"io"
+	"io/ioutil"
+	"log"
+	"os"
 )
 
 type Config struct {
-	Token string
+	Token     string
 	BotConfig swearbot.BotConfig
 }
 
@@ -34,7 +34,7 @@ func main() {
 }
 
 func createLogFile(fileName string) *os.File {
-	logFile, err := os.OpenFile(fileName, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	logFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("Error opening log file: %v", err)
 	}
@@ -70,7 +70,7 @@ func processEvents(rtm *slack.RTM, config Config) {
 
 	for {
 		select {
-		case msg := <- rtm.IncomingEvents:
+		case msg := <-rtm.IncomingEvents:
 
 			switch ev := msg.Data.(type) {
 			case *slack.HelloEvent:

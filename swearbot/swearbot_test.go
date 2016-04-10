@@ -1,12 +1,12 @@
 package swearbot
 
 import (
+	"../swears"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
-	"io/ioutil"
 	"testing"
-	"../swears"
 )
 
 func init() {
@@ -61,15 +61,15 @@ func TestAddRuleInvalidWildcardErr(t *testing.T) {
 }
 
 func createBotConfig() BotConfig {
-	return BotConfig {
-		AddRuleRegex: "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*$",
+	return BotConfig{
+		AddRuleRegex:          "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*$",
 		OnSwearsFoundResponse: "Swears: %s",
-		OnAddRuleResponse: "Rule: %s",
-		SwearsConfig: swears.SwearsConfig {
+		OnAddRuleResponse:     "Rule: %s",
+		SwearsConfig: swears.SwearsConfig{
 			OnAddRuleFileReadErr: "FileReadErr",
 			OnAddRuleConflictErr: "ConflictErr",
-			OnAddRuleSaveErr: "SaveErr",
-			OnIvalidWildcardErr: "InvalidWildcard",
+			OnAddRuleSaveErr:     "SaveErr",
+			OnIvalidWildcardErr:  "InvalidWildcard",
 		},
 	}
 }
@@ -85,7 +85,7 @@ func createTempDict() *os.File {
 }
 
 func loadTempDict(file *os.File) {
-	rules := []string { "a", "abcd", "abb*" }
+	rules := []string{"a", "abcd", "abb*"}
 	for _, rule := range rules {
 		file.WriteString(fmt.Sprintf("%s\n", rule))
 	}

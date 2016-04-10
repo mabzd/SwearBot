@@ -1,26 +1,26 @@
 package stats
 
 import (
-	"fmt"
-	"os"
-	"log"
-	"sort"
-	"errors"
-	"io/ioutil"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"os"
+	"sort"
 )
 
 type Stats struct {
 	statsFileName string
-	config StatsConfig
+	config        StatsConfig
 }
 
 type StatsConfig struct {
 	OnStatsFileCreateErr string
-	OnStatsFileReadErr string
-	OnStatsUnmarshalErr string
-	OnStatsMarshalErr string
-	OnStatsSaveErr string
+	OnStatsFileReadErr   string
+	OnStatsUnmarshalErr  string
+	OnStatsMarshalErr    string
+	OnStatsSaveErr       string
 }
 
 type StatsData struct {
@@ -28,13 +28,13 @@ type StatsData struct {
 }
 
 type Month struct {
-	Year int
+	Year  int
 	Month int
 	Users []*User
 }
 
 type User struct {
-	Name string
+	Name       string
 	SwearCount int
 }
 
@@ -53,9 +53,9 @@ func (a BySwearCount) Less(i, j int) bool {
 }
 
 func NewStats(statsFileName string, config StatsConfig) *Stats {
-	return &Stats {
+	return &Stats{
 		statsFileName: statsFileName,
-		config: config,
+		config:        config,
 	}
 }
 
@@ -78,7 +78,7 @@ func (st *Stats) GetMonthlyRank(month int, year int) ([]*User, error) {
 
 func (st *Stats) createStatsFileIfNotExist() error {
 	if _, err := os.Stat(st.statsFileName); os.IsNotExist(err) {
-		data := &StatsData {
+		data := &StatsData{
 			Months: make(map[string]*Month),
 		}
 		return st.writeStats(data)
@@ -124,8 +124,8 @@ func addSwearCount(data *StatsData, m int, y int, name string, count int) {
 	monthKey := getMonthKey(m, y)
 	month := data.Months[monthKey]
 	if month == nil {
-		month = &Month {
-			Year: y,
+		month = &Month{
+			Year:  y,
 			Month: m,
 			Users: []*User{},
 		}
@@ -133,8 +133,8 @@ func addSwearCount(data *StatsData, m int, y int, name string, count int) {
 	}
 	user := findUser(month.Users, name)
 	if user == nil {
-		user = &User {
-			Name: name,
+		user = &User{
+			Name:       name,
 			SwearCount: 0,
 		}
 		month.Users = append(month.Users, user)

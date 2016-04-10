@@ -1,34 +1,34 @@
 package swearbot
 
 import (
-	"fmt"
-	"strings"
-	"regexp"
-	"../swears"
 	"../stats"
+	"../swears"
+	"fmt"
+	"regexp"
+	"strings"
 )
 
 type BotConfig struct {
-	AddRuleRegex string
-	OnAddRuleResponse string
+	AddRuleRegex          string
+	OnAddRuleResponse     string
 	OnSwearsFoundResponse string
-	SwearsConfig swears.SwearsConfig
-	StatsConfig stats.StatsConfig
+	SwearsConfig          swears.SwearsConfig
+	StatsConfig           stats.StatsConfig
 }
 
 type SwearBot struct {
-	swears *swears.Swears
-	stats *stats.Stats
+	swears       *swears.Swears
+	stats        *stats.Stats
 	addRuleRegex *regexp.Regexp
-	config BotConfig
+	config       BotConfig
 }
 
 func NewSwearBot(dictFileName string, statsFileName string, config BotConfig) *SwearBot {
-	return &SwearBot {
-		swears: swears.NewSwears(dictFileName, config.SwearsConfig),
-		stats: stats.NewStats(statsFileName, config.StatsConfig),
+	return &SwearBot{
+		swears:       swears.NewSwears(dictFileName, config.SwearsConfig),
+		stats:        stats.NewStats(statsFileName, config.StatsConfig),
 		addRuleRegex: regexp.MustCompile(config.AddRuleRegex),
-		config: config,
+		config:       config,
 	}
 }
 
@@ -58,4 +58,3 @@ func (sb *SwearBot) parseSwears(message string) string {
 	}
 	return ""
 }
-
