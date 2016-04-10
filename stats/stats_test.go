@@ -2,10 +2,15 @@ package stats
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	"reflect"
 	"testing"
 )
+
+func init() {
+	log.SetOutput(ioutil.Discard)
+}
 
 func TestAddSwears(t *testing.T) {
 	tmpFilePath := createTmpFilePath(t)
