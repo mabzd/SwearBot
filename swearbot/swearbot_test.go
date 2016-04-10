@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+func init() {
+	log.SetOutput(ioutil.Discard)
+}
+
 func TestSwears(t *testing.T) {
 	config := createBotConfig()
 	tmpfile := createTempDict()
@@ -85,7 +89,7 @@ func loadTempDict(file *os.File) {
 }
 
 func createBot(file *os.File, config BotConfig) *SwearBot {
-	sb := NewSwearBot(file.Name(), config)
+	sb := NewSwearBot(file.Name(), "", config)
 	sb.LoadSwears()
 	return sb
 }

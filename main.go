@@ -64,7 +64,7 @@ func logInfo(info *slack.Info) {
 }
 
 func processEvents(rtm *slack.RTM, config Config) {
-	swearBot := swearbot.NewSwearBot("swears.txt", config.BotConfig)
+	swearBot := swearbot.NewSwearBot("swears.txt", "stats.json", config.BotConfig)
 	swearBot.LoadSwears()
 	log.Println("Swears loaded")
 

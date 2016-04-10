@@ -19,19 +19,26 @@ type BotConfig struct {
 	OnAddRuleConflictErr string
 	OnAddRuleSaveErr string
 	OnIvalidWildcardErr string
+	OnStatsFileCreateErr string
+	OnStatsFileReadErr string
+	OnStatsUnmarshalErr string
+	OnStatsMarshalErr string
+	OnStatsSaveErr string
 }
 
 type SwearBot struct {
 	dict *dictmatch.Dict
 	dictFileName string
+	statsFileName string
 	addRuleRegex *regexp.Regexp
 	config BotConfig
 }
 
-func NewSwearBot(fileName string, botConfig BotConfig) *SwearBot {
+func NewSwearBot(dictFileName string, statsFileName string, botConfig BotConfig) *SwearBot {
 	return &SwearBot {
 		dict: dictmatch.NewDict(),
-		dictFileName: fileName,
+		dictFileName: dictFileName,
+		statsFileName: statsFileName,
 		addRuleRegex: regexp.MustCompile(botConfig.AddRuleRegex),
 		config: botConfig,
 	}
