@@ -3,7 +3,7 @@ lock '3.4.0'
 set :application, "swearbot"
 set :repo_url, "git@github.com:mabzd/SwearBot.git"
 
-set :linked_files, %w(bin/config.json bin/config.json log.txt)
+set :linked_files, %w(bin/config.json log.txt)
 set :keep_releases, 5
 set :deploy_to, "/var/go/swearbot"
 
