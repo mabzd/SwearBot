@@ -3,58 +3,171 @@ package swearbot
 import (
 	"../stats"
 	"../swears"
+	"bytes"
 	"fmt"
+	"github.com/nlopes/slack"
+	"log"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type BotConfig struct {
 	AddRuleRegex          string
+	MonthlyRankRegex      string
 	OnAddRuleResponse     string
 	OnSwearsFoundResponse string
+	OnEmptyRankResponse   string
+	OnUserFetchErr        string
 	SwearsConfig          swears.SwearsConfig
 	StatsConfig           stats.StatsConfig
 }
 
 type SwearBot struct {
-	swears       *swears.Swears
-	stats        *stats.Stats
-	addRuleRegex *regexp.Regexp
-	config       BotConfig
+	name             string
+	api              *slack.Client
+	swears           *swears.Swears
+	stats            *stats.Stats
+	addRuleRegex     *regexp.Regexp
+	monthlyRankRegex *regexp.Regexp
+	config           BotConfig
 }
 
-func NewSwearBot(dictFileName string, statsFileName string, config BotConfig) *SwearBot {
+func NewSwearBot(
+	dictFileName string,
+	statsFileName string,
+	config BotConfig) *SwearBot {
+
 	return &SwearBot{
-		swears:       swears.NewSwears(dictFileName, config.SwearsConfig),
-		stats:        stats.NewStats(statsFileName, config.StatsConfig),
-		addRuleRegex: regexp.MustCompile(config.AddRuleRegex),
-		config:       config,
+		name:             "",
+		api:              nil,
+		swears:           swears.NewSwears(dictFileName, config.SwearsConfig),
+		stats:            stats.NewStats(statsFileName, config.StatsConfig),
+		addRuleRegex:     regexp.MustCompile(config.AddRuleRegex),
+		monthlyRankRegex: regexp.MustCompile(config.MonthlyRankRegex),
+		config:           config,
 	}
 }
 
-func (sb *SwearBot) LoadSwears() {
+func (sb *SwearBot) Run(token string) {
+
 	sb.swears.LoadSwears()
+	sb.api = slack.New(token)
+	sb.api.SetDebug(false)
+	rtm := sb.api.NewRTM()
+
+	go rtm.ManageConnection()
+
+	for {
+		select {
+		case msg := <-rtm.IncomingEvents:
+
+			switch ev := msg.Data.(type) {
+			case *slack.ConnectedEvent:
+				logInfo(ev.Info)
+				sb.name = ev.Info.User.Name
+
+			case *slack.MessageEvent:
+				response := sb.ParseMessage(ev.Text, ev.User)
+				if response != "" {
+					rtm.SendMessage(rtm.NewOutgoingMessage(response, ev.Channel))
+				}
+
+			case *slack.RTMError:
+				log.Printf("RTM Error: %s\n", ev.Error())
+
+			case *slack.InvalidAuthEvent:
+				log.Println("Invalid credentials")
+				return
+
+			default:
+			}
+		}
+	}
 }
 
-func (sb *SwearBot) ParseMessage(message string) string {
+func (sb *SwearBot) ParseMessage(message string, user string) string {
+	if sb.monthlyRankRegex.MatchString(message) {
+		return sb.printMonthlyRank()
+	}
+
 	rules := sb.addRuleRegex.FindAllStringSubmatch(message, 1)
 	if rules != nil {
-		rule := rules[0][1]
-		err := sb.swears.AddRule(rule)
+		return sb.addRule(rules[0][1])
+	}
+
+	return sb.parseSwears(message, user)
+}
+
+func (sb *SwearBot) printMonthlyRank() string {
+	now := time.Now()
+	users, err := sb.stats.GetMonthlyRank(int(now.Month()), now.Year())
+	if err != nil {
+		return err.Error()
+	}
+
+	if len(users) == 0 {
+		return sb.config.OnEmptyRankResponse
+	}
+
+	slackUsers, getUsersErr := sb.api.GetUsers()
+	if getUsersErr != nil {
+		log.Printf("Print monthly rank: cannot fetch users from slack: %s\n", getUsersErr)
+		return sb.config.OnUserFetchErr
+	}
+
+	var response bytes.Buffer
+	for i, user := range users {
+		slackUser := getSlackUserById(slackUsers, user.Name)
+		rankLine := fmt.Sprintf("%d. *%s*: %d swears\n", i+1, slackUser.Name, user.SwearCount)
+		response.WriteString(rankLine)
+	}
+
+	return response.String()
+}
+
+func (sb *SwearBot) addRule(rule string) string {
+	err := sb.swears.AddRule(rule)
+	if err != nil {
+		return err.Error()
+	}
+
+	return fmt.Sprintf(sb.config.OnAddRuleResponse, rule)
+}
+
+func (sb *SwearBot) parseSwears(message string, user string) string {
+	swears := sb.swears.FindSwears(message)
+
+	if len(swears) > 0 {
+		now := time.Now()
+		err := sb.stats.AddSwearCount(int(now.Month()), now.Year(), user, len(swears))
 		if err != nil {
 			return err.Error()
 		}
-		return fmt.Sprintf(sb.config.OnAddRuleResponse, rule)
-	}
-	return sb.parseSwears(message)
-}
 
-func (sb *SwearBot) parseSwears(message string) string {
-	swears := sb.swears.FindSwears(message)
-	if len(swears) > 0 {
 		swearsLine := fmt.Sprintf("*%s*", strings.Join(swears, "*, *"))
 		response := fmt.Sprintf(sb.config.OnSwearsFoundResponse, swearsLine)
 		return response
 	}
+
 	return ""
+}
+
+func getSlackUserById(slackUsers []slack.User, id string) *slack.User {
+	for _, slackUser := range slackUsers {
+		if slackUser.ID == id {
+			return &slackUser
+		}
+	}
+	return nil
+}
+
+func logInfo(info *slack.Info) {
+	log.Println("Connected to: " + info.URL)
+	log.Printf("Bot name: @%s", info.User.Name)
+	for _, c := range info.Channels {
+		if c.IsMember {
+			log.Printf("Member of channel: #%s\n", c.Name)
+		}
+	}
 }

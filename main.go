@@ -3,7 +3,6 @@ package main
 import (
 	"./swearbot"
 	"encoding/json"
-	"github.com/nlopes/slack"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,19 +17,11 @@ type Config struct {
 func main() {
 	var logFile *os.File = createLogFile("log.txt")
 	defer logFile.Close()
+
 	log.SetOutput(io.MultiWriter(logFile, os.Stdout))
-
 	config := readConfig("config.json")
-
-	api := slack.New(config.Token)
-	api.SetDebug(false)
-
-	rtm := api.NewRTM()
-	go rtm.ManageConnection()
-
-	log.Println("Start")
-	processEvents(rtm, config)
-	log.Println("Finish")
+	bot := swearbot.NewSwearBot("swears.txt", "stats.json", config.BotConfig)
+	bot.Run(config.Token)
 }
 
 func createLogFile(fileName string) *os.File {
@@ -52,55 +43,4 @@ func readConfig(fileName string) Config {
 		log.Fatalf("Error when parsing config JSON: %s", err)
 	}
 	return config
-}
-
-func logInfo(info *slack.Info) {
-	log.Println("Connected to: " + info.URL)
-	for _, c := range info.Channels {
-		if c.IsMember {
-			log.Printf("Member of channel: #%s\n", c.Name)
-		}
-	}
-}
-
-func processEvents(rtm *slack.RTM, config Config) {
-	swearBot := swearbot.NewSwearBot("swears.txt", "stats.json", config.BotConfig)
-	swearBot.LoadSwears()
-	log.Println("Swears loaded")
-
-	for {
-		select {
-		case msg := <-rtm.IncomingEvents:
-
-			switch ev := msg.Data.(type) {
-			case *slack.HelloEvent:
-				// Ignore hello
-
-			case *slack.ConnectedEvent:
-				logInfo(ev.Info)
-
-			case *slack.MessageEvent:
-				response := swearBot.ParseMessage(ev.Text)
-				if response != "" {
-					rtm.SendMessage(rtm.NewOutgoingMessage(response, ev.Channel))
-				}
-
-			case *slack.PresenceChangeEvent:
-				// Ignore presence change
-
-			case *slack.LatencyReport:
-				// Ignore latency report
-
-			case *slack.RTMError:
-				log.Printf("RTM Error: %s\n", ev.Error())
-
-			case *slack.InvalidAuthEvent:
-				log.Println("Invalid credentials")
-				return
-
-			default:
-				// Ignore other events
-			}
-		}
-	}
 }

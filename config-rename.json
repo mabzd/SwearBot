@@ -2,8 +2,11 @@
 	"Token": "<SLACK-BOT-TOKEN-HERE>",
 	"BotConfig": {
 		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*",
+		"MonthlyRankRegex": "^\\s*monthly rank\\s*",
 		"OnAddRuleResponse": "Rule '%s' added.",
 		"OnSwearsFoundResponse": "Following swears found: %s",
+		"OnEmptyRankResponse": "Rank is empty.",
+		"OnUserFetchErr": "Error when fetching slack users!",
 		"SwearsConfig": {
 			"OnAddRuleFileReadErr": "Error when reading database!",
 			"OnAddRuleConflictErr": "Similar rule already exists!",
