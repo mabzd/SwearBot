@@ -65,12 +65,13 @@ func TestAddRuleInvalidWildcardErr(t *testing.T) {
 
 func createSwears(tmpFilePath string) *Swears {
 	config := SwearsConfig{
+		DictFileName:         tmpFilePath,
 		OnAddRuleFileReadErr: "FileReadErr",
 		OnAddRuleConflictErr: "ConflictErr",
 		OnAddRuleSaveErr:     "SaveErr",
 		OnIvalidWildcardErr:  "InvalidWildcard",
 	}
-	sw := NewSwears(tmpFilePath, config)
+	sw := NewSwears(nil, config)
 	sw.LoadSwears()
 	return sw
 }

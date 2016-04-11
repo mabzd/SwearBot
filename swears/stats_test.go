@@ -1,4 +1,4 @@
-package stats
+package swears
 
 import (
 	"io/ioutil"
@@ -16,9 +16,9 @@ func TestAddSwears(t *testing.T) {
 	tmpFilePath := createTmpFilePath(t)
 	defer os.Remove(tmpFilePath)
 
-	st := createStats(tmpFilePath)
-	assertAddSwearCount(t, st, 1, 2016, "user1", 3)
-	assertAddSwearCount(t, st, 1, 2016, "user1", 2)
+	sw := createStats(tmpFilePath)
+	assertAddSwearCount(t, sw, 1, 2016, "user1", 3)
+	assertAddSwearCount(t, sw, 1, 2016, "user1", 2)
 
 	expected := []*UserStats{
 		&UserStats{
@@ -27,19 +27,19 @@ func TestAddSwears(t *testing.T) {
 		},
 	}
 
-	assertMonthlyRank(t, st, 1, 2016, expected)
+	assertMonthlyRank(t, sw, 1, 2016, expected)
 }
 
 func TestRankOrder(t *testing.T) {
 	tmpFilePath := createTmpFilePath(t)
 	defer os.Remove(tmpFilePath)
 
-	st := createStats(tmpFilePath)
-	assertAddSwearCount(t, st, 1, 2016, "user1", 3)
-	assertAddSwearCount(t, st, 1, 2016, "user2", 4)
-	assertAddSwearCount(t, st, 1, 2016, "user1", 2)
-	assertAddSwearCount(t, st, 1, 2016, "user3", 6)
-	assertAddSwearCount(t, st, 2, 2016, "user1", 10)
+	sw := createStats(tmpFilePath)
+	assertAddSwearCount(t, sw, 1, 2016, "user1", 3)
+	assertAddSwearCount(t, sw, 1, 2016, "user2", 4)
+	assertAddSwearCount(t, sw, 1, 2016, "user1", 2)
+	assertAddSwearCount(t, sw, 1, 2016, "user3", 6)
+	assertAddSwearCount(t, sw, 2, 2016, "user1", 10)
 
 	expected := []*UserStats{
 		&UserStats{
@@ -56,21 +56,21 @@ func TestRankOrder(t *testing.T) {
 		},
 	}
 
-	assertMonthlyRank(t, st, 1, 2016, expected)
+	assertMonthlyRank(t, sw, 1, 2016, expected)
 }
 
 func TestUnknownMonth(t *testing.T) {
 	tmpFilePath := createTmpFilePath(t)
 	defer os.Remove(tmpFilePath)
 
-	st := createStats(tmpFilePath)
-	assertAddSwearCount(t, st, 1, 2016, "user1", 1)
+	sw := createStats(tmpFilePath)
+	assertAddSwearCount(t, sw, 1, 2016, "user1", 1)
 
-	assertMonthlyRank(t, st, 2, 2016, []*UserStats{})
+	assertMonthlyRank(t, sw, 2, 2016, []*UserStats{})
 }
 
 func createTmpFilePath(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "stats")
+	tmpfile, err := ioutil.TempFile("", "Swears")
 	if err != nil {
 		t.Fatalf("Cannot create tmp file: %s", err)
 	}
@@ -80,19 +80,22 @@ func createTmpFilePath(t *testing.T) string {
 	return path
 }
 
-func createStats(tmpFilePath string) *Stats {
-	return NewStats(tmpFilePath, StatsConfig{})
+func createStats(tmpFilePath string) *Swears {
+	config := SwearsConfig{
+		StatsFileName: tmpFilePath,
+	}
+	return NewSwears(nil, config)
 }
 
-func assertAddSwearCount(t *testing.T, st *Stats, m int, y int, u string, n int) {
-	err := st.AddSwearCount(m, y, u, n)
+func assertAddSwearCount(t *testing.T, sw *Swears, m int, y int, u string, n int) {
+	err := sw.AddSwearCount(m, y, u, n)
 	if err != nil {
 		t.Fatalf("Expected no error when adding swears but got %s", err)
 	}
 }
 
-func assertMonthlyRank(t *testing.T, st *Stats, m int, y int, expected []*UserStats) {
-	users, err := st.GetMonthlyRank(m, y)
+func assertMonthlyRank(t *testing.T, sw *Swears, m int, y int, expected []*UserStats) {
+	users, err := sw.GetMonthlyRank(m, y)
 	if err != nil {
 		t.Fatalf("Expected no error when getting monthly rank but got %s", err)
 	}

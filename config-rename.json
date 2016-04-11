@@ -1,17 +1,20 @@
 {
-	"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*",
-	"MonthlyRankRegex": "^\\s*monthly rank\\s*",
-	"OnAddRuleResponse": "Rule '%s' added.",
-	"OnSwearsFoundResponse": "Following swears found: %s",
-	"OnEmptyRankResponse": "Rank is empty.",
-	"OnUserFetchErr": "Error when fetching slack users!",
 	"SwearsConfig": {
+		"DictFileName": "swears.txt", 
+		"StatsFileName": "stats.json",
+
+		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*",
+		"MonthlyRankRegex": "^\\s*monthly rank\\s*",
+
+		"OnAddRuleResponse": "Rule '%s' added.",
+		"OnSwearsFoundResponse": "Following swears found: %s",
+		"OnEmptyRankResponse": "Rank is empty.",
+
+		"OnUserFetchErr": "Error when fetching slack users!",
 		"OnAddRuleFileReadErr": "Error when reading database!",
 		"OnAddRuleConflictErr": "Similar rule already exists!",
 		"OnAddRuleSaveErr": "Error when saving to database!",
-		"OnIvalidWildcardErr": "Invalid wildcard placement!"
-	},
-	"StatsConfig": {
+		"OnIvalidWildcardErr": "Invalid wildcard placement!",
 		"OnStatsFileCreateErr": "Error when creating stats file!",
 		"OnStatsFileReadErr": "Error when reading stats file!",
 		"OnStatsUnmarshalErr": "Error when getting stats from JSON!",

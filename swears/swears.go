@@ -2,96 +2,128 @@ package swears
 
 import (
 	"../dictmatch"
-	"bufio"
-	"errors"
+	"bytes"
 	"fmt"
+	"github.com/nlopes/slack"
 	"log"
-	"os"
+	"regexp"
 	"strings"
+	"time"
 )
 
 type Swears struct {
-	dict         *dictmatch.Dict
-	dictFileName string
-	config       SwearsConfig
+	api              *slack.Client
+	dict             *dictmatch.Dict
+	addRuleRegex     *regexp.Regexp
+	monthlyRankRegex *regexp.Regexp
+	config           SwearsConfig
 }
 
 type SwearsConfig struct {
-	OnAddRuleFileReadErr string
-	OnAddRuleConflictErr string
-	OnAddRuleSaveErr     string
-	OnIvalidWildcardErr  string
+	DictFileName  string
+	StatsFileName string
+
+	AddRuleRegex     string
+	MonthlyRankRegex string
+
+	OnAddRuleResponse     string
+	OnSwearsFoundResponse string
+	OnEmptyRankResponse   string
+	OnUserFetchErr        string
+	OnAddRuleFileReadErr  string
+	OnAddRuleConflictErr  string
+	OnAddRuleSaveErr      string
+	OnIvalidWildcardErr   string
+
+	OnStatsFileCreateErr string
+	OnStatsFileReadErr   string
+	OnStatsUnmarshalErr  string
+	OnStatsMarshalErr    string
+	OnStatsSaveErr       string
 }
 
-func NewSwears(dictFileName string, config SwearsConfig) *Swears {
+func NewSwears(api *slack.Client, config SwearsConfig) *Swears {
 	return &Swears{
-		dict:         dictmatch.NewDict(),
-		dictFileName: dictFileName,
-		config:       config,
+		api:              api,
+		dict:             dictmatch.NewDict(),
+		addRuleRegex:     regexp.MustCompile(config.AddRuleRegex),
+		monthlyRankRegex: regexp.MustCompile(config.MonthlyRankRegex),
+		config:           config,
 	}
 }
 
-func (sw *Swears) LoadSwears() {
-	file, err := os.Open(sw.dictFileName)
+func (sw *Swears) ProcessMessage(message string, userId string) string {
+	if sw.monthlyRankRegex.MatchString(message) {
+		return sw.printMonthlyRank()
+	}
+
+	rules := sw.addRuleRegex.FindAllStringSubmatch(message, 1)
+	if rules != nil {
+		return sw.addRule(rules[0][1])
+	}
+
+	return sw.parseSwears(message, userId)
+}
+
+func (sw *Swears) printMonthlyRank() string {
+	now := time.Now()
+	userStats, rankErr := sw.GetMonthlyRank(int(now.Month()), now.Year())
+	if rankErr != nil {
+		return rankErr.Error()
+	}
+
+	if len(userStats) == 0 {
+		return sw.config.OnEmptyRankResponse
+	}
+
+	users, usersErr := sw.api.GetUsers()
+	if usersErr != nil {
+		log.Printf("Monthly rank: Cannot fetch users from slack: %s\n", usersErr)
+		return sw.config.OnUserFetchErr
+	}
+
+	var response bytes.Buffer
+	for i, userStat := range userStats {
+		user := getUserById(users, userStat.UserId)
+		rankLine := fmt.Sprintf("%d. *%s*: %d swears\n", i+1, user.Name, userStat.SwearCount)
+		response.WriteString(rankLine)
+	}
+
+	return response.String()
+}
+
+func (sw *Swears) addRule(rule string) string {
+	err := sw.AddRule(rule)
 	if err != nil {
-		log.Fatalf("Error opening swear dictionary file: %v", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		word := normalizeWord(scanner.Text())
-		sw.dict.AddEntry(word)
+		return err.Error()
 	}
 
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error reading from swear dictionary file: %v", err)
-	}
+	return fmt.Sprintf(sw.config.OnAddRuleResponse, rule)
 }
 
-func (sw *Swears) AddRule(rule string) error {
-	file, fileReadErr := os.OpenFile(sw.dictFileName, os.O_RDWR|os.O_APPEND, 0666)
-	if fileReadErr != nil {
-		log.Printf("Add rule: Cannot open swear dictionary file: %v", fileReadErr)
-		return errors.New(sw.config.OnAddRuleFileReadErr)
-	}
-	defer file.Close()
+func (sw *Swears) parseSwears(message string, user string) string {
+	swears := sw.FindSwears(message)
 
-	normRule := normalizeWord(rule)
-
-	confilctErr := sw.dict.AddEntry(normRule)
-	if confilctErr != nil {
-		log.Printf("Add rule: %s", confilctErr.Desc)
-		if confilctErr.ErrType == dictmatch.InvalidWildardPlacementErr {
-			return errors.New(sw.config.OnIvalidWildcardErr)
+	if len(swears) > 0 {
+		now := time.Now()
+		err := sw.AddSwearCount(int(now.Month()), now.Year(), user, len(swears))
+		if err != nil {
+			return err.Error()
 		}
-		return errors.New(sw.config.OnAddRuleConflictErr)
+
+		swearsLine := fmt.Sprintf("*%s*", strings.Join(swears, "*, *"))
+		response := fmt.Sprintf(sw.config.OnSwearsFoundResponse, swearsLine)
+		return response
 	}
 
-	_, saveErr := file.WriteString(fmt.Sprintf("%s\n", normRule))
-	if saveErr != nil {
-		log.Printf("Add rule: Cannot write string '%s' to swear dictionary file: %v", normRule, saveErr)
-		return errors.New(sw.config.OnAddRuleSaveErr)
-	}
+	return ""
+}
 
+func getUserById(users []slack.User, id string) *slack.User {
+	for _, user := range users {
+		if user.ID == id {
+			return &user
+		}
+	}
 	return nil
-}
-
-func (sw *Swears) FindSwears(message string) []string {
-	swears := make([]string, 0)
-	words := strings.Fields(message)
-	for _, word := range words {
-		word = normalizeWord(word)
-		success, _ := sw.dict.Match(word)
-		if success {
-			swears = append(swears, word)
-		}
-	}
-	return swears
-}
-
-func normalizeWord(word string) string {
-	word = strings.Trim(word, " \n\r")
-	word = strings.ToLower(word)
-	return word
 }

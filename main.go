@@ -16,8 +16,7 @@ func main() {
 	log.SetOutput(io.MultiWriter(logFile, os.Stdout))
 	token := readSlackToken("token.txt")
 	config := readConfig("config.json")
-	bot := swearbot.NewSwearBot("swears.txt", "stats.json", config)
-	bot.Run(token)
+	swearbot.Run(token, config)
 }
 
 func createLogFile(fileName string) *os.File {
