@@ -14,7 +14,7 @@
 		"OnAddRuleFileReadErr": "Error when reading database!",
 		"OnAddRuleConflictErr": "Similar rule already exists!",
 		"OnAddRuleSaveErr": "Error when saving to database!",
-		"OnIvalidWildcardErr": "Invalid wildcard placement!",
+		"OnInvalidWildcardErr": "Invalid wildcard placement!",
 		"OnStatsFileCreateErr": "Error when creating stats file!",
 		"OnStatsFileReadErr": "Error when reading stats file!",
 		"OnStatsUnmarshalErr": "Error when getting stats from JSON!",

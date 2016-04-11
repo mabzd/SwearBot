@@ -2,12 +2,19 @@ package swears
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"sort"
+)
+
+const (
+	StatsFileCreateErr = 11
+	StatsFileReadErr   = 12
+	StatsUnmarshalErr  = 13
+	StatsMarshalErr    = 14
+	StatsSaveErr       = 15
 )
 
 type AllStats struct {
@@ -39,79 +46,85 @@ func (a BySwearCount) Less(i, j int) bool {
 	return a[i].SwearCount > a[j].SwearCount
 }
 
-func (sw *Swears) AddSwearCount(month int, year int, name string, count int) error {
-	data, err := sw.readStats()
-	if err != nil {
+func (sw *Swears) AddSwearCount(month int, year int, name string, count int) int {
+	stats, err := readStats(sw.config.StatsFileName)
+	if err != Success {
 		return err
 	}
-	addSwearCount(data, month, year, name, count)
-	return sw.writeStats(data)
+
+	addSwearCount(stats, month, year, name, count)
+	return writeStats(sw.config.StatsFileName, stats)
 }
 
-func (sw *Swears) GetMonthlyRank(month int, year int) ([]*UserStats, error) {
-	data, err := sw.readStats()
-	if err != nil {
+func (sw *Swears) GetMonthlyRank(month int, year int) ([]*UserStats, int) {
+	stats, err := readStats(sw.config.StatsFileName)
+	if err != Success {
 		return nil, err
 	}
-	return getMonthlyRank(data, month, year), nil
+
+	return getMonthlyRank(stats, month, year), Success
 }
 
-func (sw *Swears) createStatsFileIfNotExist() error {
-	if _, err := os.Stat(sw.config.StatsFileName); os.IsNotExist(err) {
-		data := &AllStats{
+func createStatsFileIfNotExist(fileName string) int {
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		stats := &AllStats{
 			Months: make(map[string]*MonthStats),
 		}
-		return sw.writeStats(data)
+		return writeStats(fileName, stats)
 	}
-	return nil
+
+	return Success
 }
 
-func (sw *Swears) readStats() (*AllStats, error) {
-	fileName := sw.config.StatsFileName
-	createErr := sw.createStatsFileIfNotExist()
-	if createErr != nil {
-		log.Printf("Swears: Cannot create Swears file '%s': %s\n", fileName, createErr)
-		return nil, errors.New(sw.config.OnStatsFileCreateErr)
+func readStats(fileName string) (*AllStats, int) {
+	createErr := createStatsFileIfNotExist(fileName)
+	if createErr != Success {
+		log.Println("Swears: Stats file creation failed.")
+		return nil, StatsFileCreateErr
 	}
+
 	bytes, fileReadErr := ioutil.ReadFile(fileName)
 	if fileReadErr != nil {
 		log.Printf("Swears: Cannot read Swears from file '%s': %s\n", fileName, fileReadErr)
-		return nil, errors.New(sw.config.OnStatsFileReadErr)
+		return nil, StatsFileReadErr
 	}
-	var data AllStats
-	unmarshalErr := json.Unmarshal(bytes, &data)
+
+	var stats AllStats
+	unmarshalErr := json.Unmarshal(bytes, &stats)
 	if unmarshalErr != nil {
 		log.Printf("Swears: Error when unmarshaling Swears from JSON: %s\n", unmarshalErr)
-		return nil, errors.New(sw.config.OnStatsUnmarshalErr)
+		return nil, StatsUnmarshalErr
 	}
-	return &data, nil
+
+	return &stats, Success
 }
 
-func (sw *Swears) writeStats(data *AllStats) error {
-	fileName := sw.config.StatsFileName
-	bytes, marshalErr := json.Marshal(data)
+func writeStats(fileName string, stats *AllStats) int {
+	bytes, marshalErr := json.Marshal(stats)
 	if marshalErr != nil {
 		log.Printf("Swears: Error when marshaling Swears to JSON: %s\n", marshalErr)
-		return errors.New(sw.config.OnStatsMarshalErr)
+		return StatsMarshalErr
 	}
+
 	saveErr := ioutil.WriteFile(fileName, bytes, 0666)
 	if saveErr != nil {
 		log.Printf("Swears: Cannot write Swears to file '%s': %s\n", fileName, saveErr)
-		return errors.New(sw.config.OnStatsSaveErr)
+		return StatsSaveErr
 	}
-	return nil
+
+	return Success
 }
 
-func addSwearCount(data *AllStats, month int, year int, userId string, count int) {
+func addSwearCount(stats *AllStats, month int, year int, userId string, count int) {
 	monthKey := getMonthKey(month, year)
-	monthStats := data.Months[monthKey]
+	monthStats := stats.Months[monthKey]
 	if monthStats == nil {
 		monthStats = &MonthStats{
 			Year:  year,
 			Month: month,
 			Users: []*UserStats{},
 		}
-		data.Months[monthKey] = monthStats
+		stats.Months[monthKey] = monthStats
 	}
 	user := getUserStatsById(monthStats.Users, userId)
 	if user == nil {
@@ -124,9 +137,9 @@ func addSwearCount(data *AllStats, month int, year int, userId string, count int
 	user.SwearCount += count
 }
 
-func getMonthlyRank(data *AllStats, month int, year int) []*UserStats {
+func getMonthlyRank(stats *AllStats, month int, year int) []*UserStats {
 	monthKey := getMonthKey(month, year)
-	monthStats := data.Months[monthKey]
+	monthStats := stats.Months[monthKey]
 	if monthStats == nil {
 		return []*UserStats{}
 	}

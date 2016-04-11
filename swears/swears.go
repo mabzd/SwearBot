@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const Success = 0
+
 type Swears struct {
 	api              *slack.Client
 	dict             *dictmatch.Dict
@@ -29,11 +31,12 @@ type SwearsConfig struct {
 	OnAddRuleResponse     string
 	OnSwearsFoundResponse string
 	OnEmptyRankResponse   string
-	OnUserFetchErr        string
-	OnAddRuleFileReadErr  string
-	OnAddRuleConflictErr  string
-	OnAddRuleSaveErr      string
-	OnIvalidWildcardErr   string
+
+	OnUserFetchErr       string
+	OnAddRuleFileReadErr string
+	OnAddRuleConflictErr string
+	OnAddRuleSaveErr     string
+	OnInvalidWildcardErr string
 
 	OnStatsFileCreateErr string
 	OnStatsFileReadErr   string
@@ -68,8 +71,8 @@ func (sw *Swears) ProcessMessage(message string, userId string) string {
 func (sw *Swears) printMonthlyRank() string {
 	now := time.Now()
 	userStats, rankErr := sw.GetMonthlyRank(int(now.Month()), now.Year())
-	if rankErr != nil {
-		return rankErr.Error()
+	if rankErr != Success {
+		return getResponseOnErr(rankErr, sw.config)
 	}
 
 	if len(userStats) == 0 {
@@ -94,8 +97,8 @@ func (sw *Swears) printMonthlyRank() string {
 
 func (sw *Swears) addRule(rule string) string {
 	err := sw.AddRule(rule)
-	if err != nil {
-		return err.Error()
+	if err != Success {
+		return getResponseOnErr(err, sw.config)
 	}
 
 	return fmt.Sprintf(sw.config.OnAddRuleResponse, rule)
@@ -107,8 +110,8 @@ func (sw *Swears) parseSwears(message string, user string) string {
 	if len(swears) > 0 {
 		now := time.Now()
 		err := sw.AddSwearCount(int(now.Month()), now.Year(), user, len(swears))
-		if err != nil {
-			return err.Error()
+		if err != Success {
+			return getResponseOnErr(err, sw.config)
 		}
 
 		swearsLine := fmt.Sprintf("*%s*", strings.Join(swears, "*, *"))
@@ -126,4 +129,30 @@ func getUserById(users []slack.User, id string) *slack.User {
 		}
 	}
 	return nil
+}
+
+func getResponseOnErr(err int, config SwearsConfig) string {
+	switch err {
+	case AddRuleFileReadErr:
+		return config.OnAddRuleFileReadErr
+	case AddRuleConflictErr:
+		return config.OnAddRuleConflictErr
+	case AddRuleSaveErr:
+		return config.OnAddRuleSaveErr
+	case InvalidWildcardErr:
+		return config.OnInvalidWildcardErr
+	case StatsFileCreateErr:
+		return config.OnStatsFileCreateErr
+	case StatsFileReadErr:
+		return config.OnStatsFileReadErr
+	case StatsUnmarshalErr:
+		return config.OnStatsUnmarshalErr
+	case StatsMarshalErr:
+		return config.OnStatsMarshalErr
+	case StatsSaveErr:
+		return config.OnStatsSaveErr
+	default:
+		log.Printf("Swears: No response for error code %d!", err)
+		return fmt.Sprintf("Error #%v", err)
+	}
 }

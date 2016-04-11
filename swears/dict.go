@@ -3,18 +3,24 @@ package swears
 import (
 	"../dictmatch"
 	"bufio"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 )
 
-func (sw *Swears) AddRule(rule string) error {
+const (
+	AddRuleFileReadErr = 21
+	InvalidWildcardErr = 22
+	AddRuleConflictErr = 23
+	AddRuleSaveErr     = 24
+)
+
+func (sw *Swears) AddRule(rule string) int {
 	file, fileReadErr := os.OpenFile(sw.config.DictFileName, os.O_RDWR|os.O_APPEND, 0666)
 	if fileReadErr != nil {
 		log.Printf("Add rule: Cannot open swear dictionary file: %v", fileReadErr)
-		return errors.New(sw.config.OnAddRuleFileReadErr)
+		return AddRuleFileReadErr
 	}
 	defer file.Close()
 
@@ -24,18 +30,19 @@ func (sw *Swears) AddRule(rule string) error {
 	if confilctErr != nil {
 		log.Printf("Add rule: %s", confilctErr.Desc)
 		if confilctErr.ErrType == dictmatch.InvalidWildardPlacementErr {
-			return errors.New(sw.config.OnIvalidWildcardErr)
+			return InvalidWildcardErr
 		}
-		return errors.New(sw.config.OnAddRuleConflictErr)
+
+		return AddRuleConflictErr
 	}
 
 	_, saveErr := file.WriteString(fmt.Sprintf("%s\n", normRule))
 	if saveErr != nil {
 		log.Printf("Add rule: Cannot write string '%s' to swear dictionary file: %v", normRule, saveErr)
-		return errors.New(sw.config.OnAddRuleSaveErr)
+		return AddRuleSaveErr
 	}
 
-	return nil
+	return Success
 }
 
 func (sw *Swears) FindSwears(message string) []string {
@@ -48,6 +55,7 @@ func (sw *Swears) FindSwears(message string) []string {
 			swears = append(swears, word)
 		}
 	}
+
 	return swears
 }
 

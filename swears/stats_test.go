@@ -89,15 +89,15 @@ func createStats(tmpFilePath string) *Swears {
 
 func assertAddSwearCount(t *testing.T, sw *Swears, m int, y int, u string, n int) {
 	err := sw.AddSwearCount(m, y, u, n)
-	if err != nil {
-		t.Fatalf("Expected no error when adding swears but got %s", err)
+	if err != Success {
+		t.Fatalf("Expected no error when adding swears but got %v", err)
 	}
 }
 
 func assertMonthlyRank(t *testing.T, sw *Swears, m int, y int, expected []*UserStats) {
 	users, err := sw.GetMonthlyRank(m, y)
-	if err != nil {
-		t.Fatalf("Expected no error when getting monthly rank but got %s", err)
+	if err != Success {
+		t.Fatalf("Expected no error when getting monthly rank but got %v", err)
 	}
 	if !reflect.DeepEqual(users, expected) {
 		t.Fatal("Monthly rank deep equal failed")

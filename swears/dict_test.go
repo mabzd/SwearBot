@@ -38,7 +38,7 @@ func TestAddRuleFileReadErr(t *testing.T) {
 
 	sw := createSwears(tmpFileName)
 	os.Remove(tmpFileName)
-	assertAddRuleErr(t, sw, "xxx*", "FileReadErr")
+	assertAddRuleErr(t, sw, "xxx*", AddRuleFileReadErr)
 }
 
 func TestAddRuleConflictErr(t *testing.T) {
@@ -46,9 +46,9 @@ func TestAddRuleConflictErr(t *testing.T) {
 	defer os.Remove(tmpFileName)
 
 	sw := createSwears(tmpFileName)
-	assertAddRuleErr(t, sw, "abc*", "ConflictErr")
-	assertAddRuleErr(t, sw, "ab*", "ConflictErr")
-	assertAddRuleErr(t, sw, "*", "ConflictErr")
+	assertAddRuleErr(t, sw, "abc*", AddRuleConflictErr)
+	assertAddRuleErr(t, sw, "ab*", AddRuleConflictErr)
+	assertAddRuleErr(t, sw, "*", AddRuleConflictErr)
 }
 
 func TestAddRuleInvalidWildcardErr(t *testing.T) {
@@ -56,20 +56,16 @@ func TestAddRuleInvalidWildcardErr(t *testing.T) {
 	defer os.Remove(tmpFileName)
 
 	sw := createSwears(tmpFileName)
-	assertAddRuleErr(t, sw, "xx*x", "InvalidWildcard")
-	assertAddRuleErr(t, sw, "*dd*", "InvalidWildcard")
-	assertAddRuleErr(t, sw, "**x1", "InvalidWildcard")
-	assertAddRuleErr(t, sw, "x2**", "InvalidWildcard")
-	assertAddRuleErr(t, sw, "**", "InvalidWildcard")
+	assertAddRuleErr(t, sw, "xx*x", InvalidWildcardErr)
+	assertAddRuleErr(t, sw, "*dd*", InvalidWildcardErr)
+	assertAddRuleErr(t, sw, "**x1", InvalidWildcardErr)
+	assertAddRuleErr(t, sw, "x2**", InvalidWildcardErr)
+	assertAddRuleErr(t, sw, "**", InvalidWildcardErr)
 }
 
 func createSwears(tmpFilePath string) *Swears {
 	config := SwearsConfig{
-		DictFileName:         tmpFilePath,
-		OnAddRuleFileReadErr: "FileReadErr",
-		OnAddRuleConflictErr: "ConflictErr",
-		OnAddRuleSaveErr:     "SaveErr",
-		OnIvalidWildcardErr:  "InvalidWildcard",
+		DictFileName: tmpFilePath,
 	}
 	sw := NewSwears(nil, config)
 	sw.LoadSwears()
@@ -102,16 +98,14 @@ func assertFindSwears(t *testing.T, sw *Swears, m string, expected []string) {
 
 func assertAddRule(t *testing.T, sw *Swears, r string) {
 	err := sw.AddRule(r)
-	if err != nil {
+	if err != Success {
 		t.Fatalf("Expected no errors when adding rule '%s', got: %v", r, err)
 	}
 }
 
-func assertAddRuleErr(t *testing.T, sw *Swears, r string, expected string) {
+func assertAddRuleErr(t *testing.T, sw *Swears, r string, expected int) {
 	err := sw.AddRule(r)
-	if err == nil {
-		t.Fatalf("Expected error %v when adding rule '%s', got no errors", expected, r)
-	} else if err.Error() != expected {
+	if err != expected {
 		t.Fatalf("Expected error %v when adding rule '%s', got %v", expected, r, err)
 	}
 }
