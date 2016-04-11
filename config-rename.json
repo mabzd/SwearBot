@@ -4,8 +4,9 @@
 		"StatsFileName": "stats.json",
 
 		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*",
-		"MonthlyRankRegex": "^\\s*monthly rank\\s*",
+		"MonthlyRankRegex": "^\\s*monthly\\s+rank\\s*",
 
+		"OnUnknownCommandResponse": "Unknown command.",
 		"OnAddRuleResponse": "Rule '%s' added.",
 		"OnSwearsFoundResponse": "Following swears found: %s",
 		"OnEmptyRankResponse": "Rank is empty.",

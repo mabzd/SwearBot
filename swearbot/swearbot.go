@@ -2,15 +2,21 @@ package swearbot
 
 import (
 	"../swears"
+	"fmt"
 	"github.com/nlopes/slack"
 	"log"
+	"regexp"
 )
+
+var botMentionRegex *regexp.Regexp = nil
 
 type BotConfig struct {
 	SwearsConfig swears.SwearsConfig
 }
 
 func Run(token string, config BotConfig) {
+
+	var connected bool = false
 
 	api := slack.New(token)
 	api.SetDebug(false)
@@ -28,11 +34,23 @@ func Run(token string, config BotConfig) {
 			switch ev := msg.Data.(type) {
 			case *slack.ConnectedEvent:
 				logInfo(ev.Info)
+				compileMentionRegex(ev.Info.User.ID)
+				connected = true
 
 			case *slack.MessageEvent:
-				response := swears.ProcessMessage(ev.Text, ev.User)
-				if response != "" {
-					rtm.SendMessage(rtm.NewOutgoingMessage(response, ev.Channel))
+				if connected {
+					response := ""
+					message := ev.Text
+					userId := ev.User
+
+					if isMention(message) {
+						message = removeMentions(message)
+						response = swears.ProcessMention(message, userId)
+					} else {
+						response = swears.ProcessMessage(message, userId)
+					}
+
+					respond(rtm, response, ev.Channel)
 				}
 
 			case *slack.RTMError:
@@ -45,6 +63,25 @@ func Run(token string, config BotConfig) {
 			default:
 			}
 		}
+	}
+}
+
+func compileMentionRegex(botName string) {
+	expr := fmt.Sprintf("<@%s>:?", regexp.QuoteMeta(botName))
+	botMentionRegex = regexp.MustCompile(expr)
+}
+
+func isMention(message string) bool {
+	return botMentionRegex.MatchString(message)
+}
+
+func removeMentions(message string) string {
+	return botMentionRegex.ReplaceAllLiteralString(message, "")
+}
+
+func respond(rtm *slack.RTM, response string, channel string) {
+	if response != "" {
+		rtm.SendMessage(rtm.NewOutgoingMessage(response, channel))
 	}
 }
 

@@ -28,9 +28,10 @@ type SwearsConfig struct {
 	AddRuleRegex     string
 	MonthlyRankRegex string
 
-	OnAddRuleResponse     string
-	OnSwearsFoundResponse string
-	OnEmptyRankResponse   string
+	OnUnknownCommandResponse string
+	OnAddRuleResponse        string
+	OnSwearsFoundResponse    string
+	OnEmptyRankResponse      string
 
 	OnUserFetchErr       string
 	OnAddRuleFileReadErr string
@@ -55,7 +56,7 @@ func NewSwears(api *slack.Client, config SwearsConfig) *Swears {
 	}
 }
 
-func (sw *Swears) ProcessMessage(message string, userId string) string {
+func (sw *Swears) ProcessMention(message string, userId string) string {
 	if sw.monthlyRankRegex.MatchString(message) {
 		return sw.printMonthlyRank()
 	}
@@ -65,7 +66,25 @@ func (sw *Swears) ProcessMessage(message string, userId string) string {
 		return sw.addRule(rules[0][1])
 	}
 
-	return sw.parseSwears(message, userId)
+	return sw.config.OnUnknownCommandResponse
+}
+
+func (sw *Swears) ProcessMessage(message string, userId string) string {
+	swears := sw.FindSwears(message)
+
+	if len(swears) > 0 {
+		now := time.Now()
+		err := sw.AddSwearCount(int(now.Month()), now.Year(), userId, len(swears))
+		if err != Success {
+			return getResponseOnErr(err, sw.config)
+		}
+
+		swearsLine := fmt.Sprintf("*%s*", strings.Join(swears, "*, *"))
+		response := fmt.Sprintf(sw.config.OnSwearsFoundResponse, swearsLine)
+		return response
+	}
+
+	return ""
 }
 
 func (sw *Swears) printMonthlyRank() string {
@@ -102,24 +121,6 @@ func (sw *Swears) addRule(rule string) string {
 	}
 
 	return fmt.Sprintf(sw.config.OnAddRuleResponse, rule)
-}
-
-func (sw *Swears) parseSwears(message string, user string) string {
-	swears := sw.FindSwears(message)
-
-	if len(swears) > 0 {
-		now := time.Now()
-		err := sw.AddSwearCount(int(now.Month()), now.Year(), user, len(swears))
-		if err != Success {
-			return getResponseOnErr(err, sw.config)
-		}
-
-		swearsLine := fmt.Sprintf("*%s*", strings.Join(swears, "*, *"))
-		response := fmt.Sprintf(sw.config.OnSwearsFoundResponse, swearsLine)
-		return response
-	}
-
-	return ""
 }
 
 func getUserById(users []slack.User, id string) *slack.User {
