@@ -9,19 +9,15 @@ import (
 	"os"
 )
 
-type Config struct {
-	Token     string
-	BotConfig swearbot.BotConfig
-}
-
 func main() {
 	var logFile *os.File = createLogFile("log.txt")
 	defer logFile.Close()
 
 	log.SetOutput(io.MultiWriter(logFile, os.Stdout))
+	token := readSlackToken("token.txt")
 	config := readConfig("config.json")
-	bot := swearbot.NewSwearBot("swears.txt", "stats.json", config.BotConfig)
-	bot.Run(config.Token)
+	bot := swearbot.NewSwearBot("swears.txt", "stats.json", config)
+	bot.Run(token)
 }
 
 func createLogFile(fileName string) *os.File {
@@ -29,18 +25,35 @@ func createLogFile(fileName string) *os.File {
 	if err != nil {
 		log.Fatalf("Error opening log file: %v", err)
 	}
+
 	return logFile
 }
 
-func readConfig(fileName string) Config {
+func readConfig(fileName string) swearbot.BotConfig {
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		log.Fatalf("Cannot read config from file '%s': %s", fileName, err)
 	}
-	var config Config
+
+	var config swearbot.BotConfig
 	err = json.Unmarshal(bytes, &config)
 	if err != nil {
 		log.Fatalf("Error when parsing config JSON: %s", err)
 	}
+
 	return config
+}
+
+func readSlackToken(fileName string) string {
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		ioutil.WriteFile(fileName, []byte("SLACK-TOKEN-HERE"), 0666)
+		log.Fatalf("Enter slack token in %s", fileName)
+	}
+
+	bytes, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		log.Fatalf("Cannot read slack token file '%s': %s", fileName, err)
+	}
+
+	return string(bytes)
 }

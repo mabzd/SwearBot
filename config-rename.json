@@ -1,24 +1,21 @@
 {
-	"Token": "<SLACK-BOT-TOKEN-HERE>",
-	"BotConfig": {
-		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*",
-		"MonthlyRankRegex": "^\\s*monthly rank\\s*",
-		"OnAddRuleResponse": "Rule '%s' added.",
-		"OnSwearsFoundResponse": "Following swears found: %s",
-		"OnEmptyRankResponse": "Rank is empty.",
-		"OnUserFetchErr": "Error when fetching slack users!",
-		"SwearsConfig": {
-			"OnAddRuleFileReadErr": "Error when reading database!",
-			"OnAddRuleConflictErr": "Similar rule already exists!",
-			"OnAddRuleSaveErr": "Error when saving to database!",
-			"OnIvalidWildcardErr": "Invalid wildcard placement!"
-		},
-		"StatsConfig": {
-			"OnStatsFileCreateErr": "Error when creating stats file!",
-			"OnStatsFileReadErr": "Error when reading stats file!",
-			"OnStatsUnmarshalErr": "Error when getting stats from JSON!",
-			"OnStatsMarshalErr": "Error when putting stats to JSON!",
-			"OnStatsSaveErr": "Error when saving to stats file!"
-		}
+	"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*",
+	"MonthlyRankRegex": "^\\s*monthly rank\\s*",
+	"OnAddRuleResponse": "Rule '%s' added.",
+	"OnSwearsFoundResponse": "Following swears found: %s",
+	"OnEmptyRankResponse": "Rank is empty.",
+	"OnUserFetchErr": "Error when fetching slack users!",
+	"SwearsConfig": {
+		"OnAddRuleFileReadErr": "Error when reading database!",
+		"OnAddRuleConflictErr": "Similar rule already exists!",
+		"OnAddRuleSaveErr": "Error when saving to database!",
+		"OnIvalidWildcardErr": "Invalid wildcard placement!"
+	},
+	"StatsConfig": {
+		"OnStatsFileCreateErr": "Error when creating stats file!",
+		"OnStatsFileReadErr": "Error when reading stats file!",
+		"OnStatsUnmarshalErr": "Error when getting stats from JSON!",
+		"OnStatsMarshalErr": "Error when putting stats to JSON!",
+		"OnStatsSaveErr": "Error when saving to stats file!"
 	}
 }
