@@ -101,25 +101,25 @@ func (sb *SwearBot) ParseMessage(message string, user string) string {
 
 func (sb *SwearBot) printMonthlyRank() string {
 	now := time.Now()
-	users, err := sb.stats.GetMonthlyRank(int(now.Month()), now.Year())
-	if err != nil {
-		return err.Error()
+	userStats, rankErr := sb.stats.GetMonthlyRank(int(now.Month()), now.Year())
+	if rankErr != nil {
+		return rankErr.Error()
 	}
 
-	if len(users) == 0 {
+	if len(userStats) == 0 {
 		return sb.config.OnEmptyRankResponse
 	}
 
-	slackUsers, getUsersErr := sb.api.GetUsers()
-	if getUsersErr != nil {
-		log.Printf("Print monthly rank: cannot fetch users from slack: %s\n", getUsersErr)
+	users, usersErr := sb.api.GetUsers()
+	if usersErr != nil {
+		log.Printf("Print monthly rank: cannot fetch users from slack: %s\n", usersErr)
 		return sb.config.OnUserFetchErr
 	}
 
 	var response bytes.Buffer
-	for i, user := range users {
-		slackUser := getSlackUserById(slackUsers, user.Name)
-		rankLine := fmt.Sprintf("%d. *%s*: %d swears\n", i+1, slackUser.Name, user.SwearCount)
+	for i, userStat := range userStats {
+		user := getUserById(users, userStat.UserId)
+		rankLine := fmt.Sprintf("%d. *%s*: %d swears\n", i+1, user.Name, userStat.SwearCount)
 		response.WriteString(rankLine)
 	}
 
@@ -153,10 +153,10 @@ func (sb *SwearBot) parseSwears(message string, user string) string {
 	return ""
 }
 
-func getSlackUserById(slackUsers []slack.User, id string) *slack.User {
-	for _, slackUser := range slackUsers {
-		if slackUser.ID == id {
-			return &slackUser
+func getUserById(users []slack.User, id string) *slack.User {
+	for _, user := range users {
+		if user.ID == id {
+			return &user
 		}
 	}
 	return nil

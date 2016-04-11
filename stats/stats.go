@@ -23,22 +23,22 @@ type StatsConfig struct {
 	OnStatsSaveErr       string
 }
 
-type StatsData struct {
-	Months map[string]*Month
+type AllStats struct {
+	Months map[string]*MonthStats
 }
 
-type Month struct {
+type MonthStats struct {
 	Year  int
 	Month int
-	Users []*User
+	Users []*UserStats
 }
 
-type User struct {
-	Name       string
+type UserStats struct {
+	UserId     string
 	SwearCount int
 }
 
-type BySwearCount []*User
+type BySwearCount []*UserStats
 
 func (a BySwearCount) Len() int {
 	return len(a)
@@ -68,7 +68,7 @@ func (st *Stats) AddSwearCount(month int, year int, name string, count int) erro
 	return st.writeStats(data)
 }
 
-func (st *Stats) GetMonthlyRank(month int, year int) ([]*User, error) {
+func (st *Stats) GetMonthlyRank(month int, year int) ([]*UserStats, error) {
 	data, err := st.readStats()
 	if err != nil {
 		return nil, err
@@ -78,15 +78,15 @@ func (st *Stats) GetMonthlyRank(month int, year int) ([]*User, error) {
 
 func (st *Stats) createStatsFileIfNotExist() error {
 	if _, err := os.Stat(st.statsFileName); os.IsNotExist(err) {
-		data := &StatsData{
-			Months: make(map[string]*Month),
+		data := &AllStats{
+			Months: make(map[string]*MonthStats),
 		}
 		return st.writeStats(data)
 	}
 	return nil
 }
 
-func (st *Stats) readStats() (*StatsData, error) {
+func (st *Stats) readStats() (*AllStats, error) {
 	createErr := st.createStatsFileIfNotExist()
 	if createErr != nil {
 		log.Printf("Stats: Cannot create stats file '%s': %s\n", st.statsFileName, createErr)
@@ -97,7 +97,7 @@ func (st *Stats) readStats() (*StatsData, error) {
 		log.Printf("Stats: Cannot read stats from file '%s': %s\n", st.statsFileName, fileReadErr)
 		return nil, errors.New(st.config.OnStatsFileReadErr)
 	}
-	var data StatsData
+	var data AllStats
 	unmarshalErr := json.Unmarshal(bytes, &data)
 	if unmarshalErr != nil {
 		log.Printf("Stats: Error when unmarshaling stats from JSON: %s\n", unmarshalErr)
@@ -106,7 +106,7 @@ func (st *Stats) readStats() (*StatsData, error) {
 	return &data, nil
 }
 
-func (st *Stats) writeStats(data *StatsData) error {
+func (st *Stats) writeStats(data *AllStats) error {
 	bytes, marshalErr := json.Marshal(data)
 	if marshalErr != nil {
 		log.Printf("Stats: Error when marshaling stats to JSON: %s\n", marshalErr)
@@ -120,41 +120,41 @@ func (st *Stats) writeStats(data *StatsData) error {
 	return nil
 }
 
-func addSwearCount(data *StatsData, m int, y int, name string, count int) {
-	monthKey := getMonthKey(m, y)
-	month := data.Months[monthKey]
-	if month == nil {
-		month = &Month{
-			Year:  y,
-			Month: m,
-			Users: []*User{},
+func addSwearCount(data *AllStats, month int, year int, userId string, count int) {
+	monthKey := getMonthKey(month, year)
+	monthStats := data.Months[monthKey]
+	if monthStats == nil {
+		monthStats = &MonthStats{
+			Year:  year,
+			Month: month,
+			Users: []*UserStats{},
 		}
-		data.Months[monthKey] = month
+		data.Months[monthKey] = monthStats
 	}
-	user := findUser(month.Users, name)
+	user := findUser(monthStats.Users, userId)
 	if user == nil {
-		user = &User{
-			Name:       name,
+		user = &UserStats{
+			UserId:     userId,
 			SwearCount: 0,
 		}
-		month.Users = append(month.Users, user)
+		monthStats.Users = append(monthStats.Users, user)
 	}
 	user.SwearCount += count
 }
 
-func getMonthlyRank(data *StatsData, m int, y int) []*User {
-	monthKey := getMonthKey(m, y)
-	month := data.Months[monthKey]
-	if month == nil {
-		return []*User{}
+func getMonthlyRank(data *AllStats, month int, year int) []*UserStats {
+	monthKey := getMonthKey(month, year)
+	monthStats := data.Months[monthKey]
+	if monthStats == nil {
+		return []*UserStats{}
 	}
-	sort.Sort(BySwearCount(month.Users))
-	return month.Users
+	sort.Sort(BySwearCount(monthStats.Users))
+	return monthStats.Users
 }
 
-func findUser(users []*User, name string) *User {
+func findUser(users []*UserStats, userId string) *UserStats {
 	for _, user := range users {
-		if user.Name == name {
+		if user.UserId == userId {
 			return user
 		}
 	}

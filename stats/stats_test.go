@@ -20,9 +20,9 @@ func TestAddSwears(t *testing.T) {
 	assertAddSwearCount(t, st, 1, 2016, "user1", 3)
 	assertAddSwearCount(t, st, 1, 2016, "user1", 2)
 
-	expected := []*User{
-		&User{
-			Name:       "user1",
+	expected := []*UserStats{
+		&UserStats{
+			UserId:     "user1",
 			SwearCount: 5,
 		},
 	}
@@ -41,17 +41,17 @@ func TestRankOrder(t *testing.T) {
 	assertAddSwearCount(t, st, 1, 2016, "user3", 6)
 	assertAddSwearCount(t, st, 2, 2016, "user1", 10)
 
-	expected := []*User{
-		&User{
-			Name:       "user3",
+	expected := []*UserStats{
+		&UserStats{
+			UserId:     "user3",
 			SwearCount: 6,
 		},
-		&User{
-			Name:       "user1",
+		&UserStats{
+			UserId:     "user1",
 			SwearCount: 5,
 		},
-		&User{
-			Name:       "user2",
+		&UserStats{
+			UserId:     "user2",
 			SwearCount: 4,
 		},
 	}
@@ -66,7 +66,7 @@ func TestUnknownMonth(t *testing.T) {
 	st := createStats(tmpFilePath)
 	assertAddSwearCount(t, st, 1, 2016, "user1", 1)
 
-	assertMonthlyRank(t, st, 2, 2016, []*User{})
+	assertMonthlyRank(t, st, 2, 2016, []*UserStats{})
 }
 
 func createTmpFilePath(t *testing.T) string {
@@ -91,7 +91,7 @@ func assertAddSwearCount(t *testing.T, st *Stats, m int, y int, u string, n int)
 	}
 }
 
-func assertMonthlyRank(t *testing.T, st *Stats, m int, y int, expected []*User) {
+func assertMonthlyRank(t *testing.T, st *Stats, m int, y int, expected []*UserStats) {
 	users, err := st.GetMonthlyRank(m, y)
 	if err != nil {
 		t.Fatalf("Expected no error when getting monthly rank but got %s", err)
