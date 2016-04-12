@@ -66,8 +66,8 @@ func Run(token string, config BotConfig) {
 	}
 }
 
-func compileMentionRegex(botName string) {
-	expr := fmt.Sprintf("<@%s>:?", regexp.QuoteMeta(botName))
+func compileMentionRegex(botId string) {
+	expr := fmt.Sprintf("<@%s>:?", regexp.QuoteMeta(botId))
 	botMentionRegex = regexp.MustCompile(expr)
 }
 
