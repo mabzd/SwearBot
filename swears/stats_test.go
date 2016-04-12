@@ -1,6 +1,7 @@
 package swears
 
 import (
+	"../utils"
 	"io/ioutil"
 	"log"
 	"os"
@@ -13,7 +14,7 @@ func init() {
 }
 
 func TestAddSwears(t *testing.T) {
-	tmpFilePath := createTmpFilePath(t)
+	tmpFilePath := createTmpStatsPath(t)
 	defer os.Remove(tmpFilePath)
 
 	sw := createStats(tmpFilePath)
@@ -31,7 +32,7 @@ func TestAddSwears(t *testing.T) {
 }
 
 func TestRankOrder(t *testing.T) {
-	tmpFilePath := createTmpFilePath(t)
+	tmpFilePath := createTmpStatsPath(t)
 	defer os.Remove(tmpFilePath)
 
 	sw := createStats(tmpFilePath)
@@ -60,7 +61,7 @@ func TestRankOrder(t *testing.T) {
 }
 
 func TestUnknownMonth(t *testing.T) {
-	tmpFilePath := createTmpFilePath(t)
+	tmpFilePath := createTmpStatsPath(t)
 	defer os.Remove(tmpFilePath)
 
 	sw := createStats(tmpFilePath)
@@ -69,15 +70,12 @@ func TestUnknownMonth(t *testing.T) {
 	assertMonthlyRank(t, sw, 2, 2016, []*UserStats{})
 }
 
-func createTmpFilePath(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "Swears")
-	if err != nil {
-		t.Fatalf("Cannot create tmp file: %s", err)
+func createTmpStatsPath(t *testing.T) string {
+	fileName := utils.CreateTmpFileName("Stats")
+	if fileName == "" {
+		t.Fatal("Cannot create temp stats file path")
 	}
-	path := tmpfile.Name()
-	tmpfile.Close()
-	os.Remove(tmpfile.Name())
-	return path
+	return fileName
 }
 
 func createStats(tmpFilePath string) *Swears {

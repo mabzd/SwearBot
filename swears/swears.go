@@ -24,8 +24,9 @@ type Swears struct {
 }
 
 type SwearsConfig struct {
-	DictFileName  string
-	StatsFileName string
+	DictFileName     string
+	StatsFileName    string
+	SettingsFileName string
 
 	AddRuleRegex     string
 	MonthlyRankRegex string

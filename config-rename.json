@@ -2,6 +2,7 @@
 	"SwearsConfig": {
 		"DictFileName": "swears.txt", 
 		"StatsFileName": "stats.json",
+		"SettingsFileName": "settings.json",
 
 		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*",
 		"MonthlyRankRegex": "^\\s*monthly\\s+rank\\s*",
