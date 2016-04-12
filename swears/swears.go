@@ -148,7 +148,7 @@ func (sw *Swears) ProcessMessage(message string, userId string, channel string) 
 		}
 
 		swearNotify, exist := sw.settings.GetSetting(userId, channel, "SwearNotify")
-		if !exist || swearNotify == "on" {
+		if exist && swearNotify == "on" {
 			return formatSwearsResponse(
 				sw.config.OnSwearsFoundResponse,
 				sw.config.SwearFormat,
