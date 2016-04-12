@@ -71,12 +71,18 @@ func (settings *AllSettings) SetSetting(
 	settings.UserSettings[userId] = userSettings
 }
 
-func (sw *Swears) ReadSettings() (*AllSettings, int) {
-	return readSettings(sw.config.SettingsFileName)
+func (sw *Swears) LoadSettings() int {
+	settings, err := readSettings(sw.config.SettingsFileName)
+	if err != Success {
+		return err
+	}
+
+	sw.settings = settings
+	return Success
 }
 
-func (sw *Swears) WriteSettings(settings *AllSettings) int {
-	return writeSettings(sw.config.SettingsFileName, settings)
+func (sw *Swears) SaveSettings() int {
+	return writeSettings(sw.config.SettingsFileName, sw.settings)
 }
 
 func createSettingsFileIfNotExist(fileName string) int {

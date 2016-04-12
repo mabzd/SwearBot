@@ -83,7 +83,7 @@ func createTmpSettingsPath(t *testing.T) string {
 }
 
 func assertReadSettings(t *testing.T, sw *Swears, expected *AllSettings) {
-	settings, err := sw.ReadSettings()
+	settings, err := readSettings(sw.config.SettingsFileName)
 	if err != Success {
 		t.Fatalf("Expected no errors when reading settings, got %v", err)
 	} else if !reflect.DeepEqual(settings, expected) {
@@ -92,7 +92,7 @@ func assertReadSettings(t *testing.T, sw *Swears, expected *AllSettings) {
 }
 
 func assertWriteSettings(t *testing.T, sw *Swears, settings *AllSettings) {
-	err := sw.WriteSettings(settings)
+	err := writeSettings(sw.config.SettingsFileName, settings)
 	if err != Success {
 		t.Fatalf("Expected no errors when writing settings, got %v", err)
 	}

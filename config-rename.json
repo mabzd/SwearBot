@@ -4,14 +4,18 @@
 		"StatsFileName": "stats.json",
 		"SettingsFileName": "settings.json",
 
-		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*",
-		"MonthlyRankRegex": "^\\s*monthly\\s+rank\\s*",
+		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*$",
+		"MonthlyRankRegex": "(?i)^\\s*monthly\\s+rank\\s*$",
+		"SwearNotifyOnRegex": "(?i)^\\s*notify\\s+on\\s*$",
+		"SwearNotifyOffRegex": "(?i)^\\s*notify\\s+off\\s*$",
 
 		"SwearFormat": "{index}. *{swear}*",
 		"OnUnknownCommandResponse": "Unknown command.",
 		"OnAddRuleResponse": "Rule '{rule}' added.",
 		"OnSwearsFoundResponse": "{count} swears found: {swears}",
 		"OnEmptyRankResponse": "Rank is empty.",
+		"OnSwearNotifyOnResponse": "Swear notification is on",
+		"OnSwearNotifyOffResponse": "Swear notification is off",
 		"MonhlyRankHeaderFormat": "*Monthly Rank* - {month} {year}",
 		"RankLineFormat": "{index}. *{user}*: {count} swears",
 		"MonthNames": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
@@ -25,6 +29,11 @@
 		"OnStatsFileReadErr": "Error when reading stats file!",
 		"OnStatsUnmarshalErr": "Error when getting stats from JSON!",
 		"OnStatsMarshalErr": "Error when putting stats to JSON!",
-		"OnStatsSaveErr": "Error when saving to stats file!"
+		"OnStatsSaveErr": "Error when saving to stats file!",
+		"OnSettingsFileCreateErr": "Error when creating settings file!",
+		"OnSettingsFileReadErr": "Error when reading settings file!",
+		"OnSettingsUnmarshalErr": "Error when getting settings from JSON!",
+		"OnSettingsMarshalErr": "Error when putting settings to JSON!",
+		"OnSettingsSaveErr": "Error when saving to settings file!"
 	}
 }

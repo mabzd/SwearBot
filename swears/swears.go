@@ -16,11 +16,14 @@ import (
 const Success = 0
 
 type Swears struct {
-	api              *slack.Client
-	dict             *dictmatch.Dict
-	addRuleRegex     *regexp.Regexp
-	monthlyRankRegex *regexp.Regexp
-	config           SwearsConfig
+	api                 *slack.Client
+	dict                *dictmatch.Dict
+	addRuleRegex        *regexp.Regexp
+	monthlyRankRegex    *regexp.Regexp
+	swearNotifyOnRegex  *regexp.Regexp
+	swearNotifyOffRegex *regexp.Regexp
+	settings            *AllSettings
+	config              SwearsConfig
 }
 
 type SwearsConfig struct {
@@ -28,14 +31,18 @@ type SwearsConfig struct {
 	StatsFileName    string
 	SettingsFileName string
 
-	AddRuleRegex     string
-	MonthlyRankRegex string
+	AddRuleRegex        string
+	MonthlyRankRegex    string
+	SwearNotifyOnRegex  string
+	SwearNotifyOffRegex string
 
 	SwearFormat              string
 	OnSwearsFoundResponse    string
 	OnUnknownCommandResponse string
 	OnAddRuleResponse        string
 	OnEmptyRankResponse      string
+	OnSwearNotifyOnResponse  string
+	OnSwearNotifyOffResponse string
 	MonhlyRankHeaderFormat   string
 	RankLineFormat           string
 	MonthNames               []string
@@ -51,19 +58,33 @@ type SwearsConfig struct {
 	OnStatsUnmarshalErr  string
 	OnStatsMarshalErr    string
 	OnStatsSaveErr       string
+
+	OnSettingsFileCreateErr string
+	OnSettingsFileReadErr   string
+	OnSettingsUnmarshalErr  string
+	OnSettingsMarshalErr    string
+	OnSettingsSaveErr       string
 }
 
 func NewSwears(api *slack.Client, config SwearsConfig) *Swears {
 	return &Swears{
-		api:              api,
-		dict:             dictmatch.NewDict(),
-		addRuleRegex:     regexp.MustCompile(config.AddRuleRegex),
-		monthlyRankRegex: regexp.MustCompile(config.MonthlyRankRegex),
-		config:           config,
+		api:                 api,
+		dict:                dictmatch.NewDict(),
+		addRuleRegex:        regexp.MustCompile(config.AddRuleRegex),
+		monthlyRankRegex:    regexp.MustCompile(config.MonthlyRankRegex),
+		swearNotifyOnRegex:  regexp.MustCompile(config.SwearNotifyOnRegex),
+		swearNotifyOffRegex: regexp.MustCompile(config.SwearNotifyOffRegex),
+		settings:            &AllSettings{UserSettings: map[string][]*UserSettings{}},
+		config:              config,
 	}
 }
 
-func (sw *Swears) ProcessMention(message string, userId string) string {
+func (sw *Swears) Init() int {
+	sw.LoadSwears()
+	return sw.LoadSettings()
+}
+
+func (sw *Swears) ProcessMention(message string, userId string, channel string) string {
 	if sw.monthlyRankRegex.MatchString(message) {
 		return sw.printMonthlyRank()
 	}
@@ -73,10 +94,18 @@ func (sw *Swears) ProcessMention(message string, userId string) string {
 		return sw.addRule(rules[0][1])
 	}
 
+	if sw.swearNotifyOnRegex.MatchString(message) {
+		return sw.setSwearNotify(userId, channel, "on")
+	}
+
+	if sw.swearNotifyOffRegex.MatchString(message) {
+		return sw.setSwearNotify(userId, channel, "off")
+	}
+
 	return sw.config.OnUnknownCommandResponse
 }
 
-func (sw *Swears) ProcessMessage(message string, userId string) string {
+func (sw *Swears) ProcessMessage(message string, userId string, channel string) string {
 	swears := sw.FindSwears(message)
 
 	if len(swears) > 0 {
@@ -86,7 +115,13 @@ func (sw *Swears) ProcessMessage(message string, userId string) string {
 			return getResponseOnErr(err, sw.config)
 		}
 
-		return formatSwearsResponse(sw.config.OnSwearsFoundResponse, sw.config.SwearFormat, swears)
+		swearNotify, exist := sw.settings.GetSetting(userId, channel, "SwearNotify")
+		if !exist || swearNotify == "on" {
+			return formatSwearsResponse(
+				sw.config.OnSwearsFoundResponse,
+				sw.config.SwearFormat,
+				swears)
+		}
 	}
 
 	return ""
@@ -122,6 +157,20 @@ func (sw *Swears) addRule(rule string) string {
 	}
 
 	return formatAddRuleResponse(sw.config.OnAddRuleResponse, rule)
+}
+
+func (sw *Swears) setSwearNotify(userId string, channel string, value string) string {
+	sw.settings.SetSetting(userId, channel, "SwearNotify", value)
+	err := sw.SaveSettings()
+	if err != Success {
+		return getResponseOnErr(err, sw.config)
+	}
+
+	if value == "on" {
+		return sw.config.OnSwearNotifyOnResponse
+	}
+
+	return sw.config.OnSwearNotifyOffResponse
 }
 
 func getUserById(users []slack.User, id string) (slack.User, bool) {
@@ -220,6 +269,16 @@ func getResponseOnErr(err int, config SwearsConfig) string {
 		return config.OnStatsMarshalErr
 	case StatsSaveErr:
 		return config.OnStatsSaveErr
+	case SettingsFileCreateErr:
+		return config.OnSettingsFileCreateErr
+	case SettingsFileReadErr:
+		return config.OnSettingsFileReadErr
+	case SettingsUnmarshalErr:
+		return config.OnSettingsUnmarshalErr
+	case SettingsMarshalErr:
+		return config.OnSettingsMarshalErr
+	case SettingsSaveErr:
+		return config.OnSettingsSaveErr
 	default:
 		log.Printf("Swears: No response for error code %d!", err)
 		return fmt.Sprintf("Error #%v", err)

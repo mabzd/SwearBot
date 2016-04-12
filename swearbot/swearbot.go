@@ -23,7 +23,10 @@ func Run(token string, config BotConfig) {
 	rtm := api.NewRTM()
 
 	swears := swears.NewSwears(api, config.SwearsConfig)
-	swears.LoadSwears()
+	err := swears.Init()
+	if err != 0 {
+		log.Fatal("Initializing swears module failed")
+	}
 
 	go rtm.ManageConnection()
 
@@ -42,15 +45,16 @@ func Run(token string, config BotConfig) {
 					response := ""
 					message := ev.Text
 					userId := ev.User
+					channel := ev.Channel
 
 					if isMention(message) {
 						message = removeMentions(message)
-						response = swears.ProcessMention(message, userId)
+						response = swears.ProcessMention(message, userId, channel)
 					} else {
-						response = swears.ProcessMessage(message, userId)
+						response = swears.ProcessMessage(message, userId, channel)
 					}
 
-					respond(rtm, response, ev.Channel)
+					respond(rtm, response, channel)
 				}
 
 			case *slack.RTMError:
