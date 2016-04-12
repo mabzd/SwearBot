@@ -6,10 +6,14 @@
 		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*",
 		"MonthlyRankRegex": "^\\s*monthly\\s+rank\\s*",
 
+		"SwearFormat": "{index}. *{swear}*",
 		"OnUnknownCommandResponse": "Unknown command.",
-		"OnAddRuleResponse": "Rule '%s' added.",
-		"OnSwearsFoundResponse": "Following swears found: %s",
+		"OnAddRuleResponse": "Rule '{rule}' added.",
+		"OnSwearsFoundResponse": "{count} swears found: {swears}",
 		"OnEmptyRankResponse": "Rank is empty.",
+		"MonhlyRankHeaderFormat": "*Monthly Rank* - {month} {year}",
+		"RankLineFormat": "{index}. *{user}*: {count} swears",
+		"MonthNames": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
 
 		"OnUserFetchErr": "Error when fetching slack users!",
 		"OnAddRuleFileReadErr": "Error when reading database!",

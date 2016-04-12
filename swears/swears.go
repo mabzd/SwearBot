@@ -2,11 +2,13 @@ package swears
 
 import (
 	"../dictmatch"
+	"../utils"
 	"bytes"
 	"fmt"
 	"github.com/nlopes/slack"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,10 +30,14 @@ type SwearsConfig struct {
 	AddRuleRegex     string
 	MonthlyRankRegex string
 
+	SwearFormat              string
+	OnSwearsFoundResponse    string
 	OnUnknownCommandResponse string
 	OnAddRuleResponse        string
-	OnSwearsFoundResponse    string
 	OnEmptyRankResponse      string
+	MonhlyRankHeaderFormat   string
+	RankLineFormat           string
+	MonthNames               []string
 
 	OnUserFetchErr       string
 	OnAddRuleFileReadErr string
@@ -79,9 +85,7 @@ func (sw *Swears) ProcessMessage(message string, userId string) string {
 			return getResponseOnErr(err, sw.config)
 		}
 
-		swearsLine := fmt.Sprintf("*%s*", strings.Join(swears, "*, *"))
-		response := fmt.Sprintf(sw.config.OnSwearsFoundResponse, swearsLine)
-		return response
+		return formatSwearsResponse(sw.config.OnSwearsFoundResponse, sw.config.SwearFormat, swears)
 	}
 
 	return ""
@@ -89,7 +93,10 @@ func (sw *Swears) ProcessMessage(message string, userId string) string {
 
 func (sw *Swears) printMonthlyRank() string {
 	now := time.Now()
-	userStats, rankErr := sw.GetMonthlyRank(int(now.Month()), now.Year())
+	month := int(now.Month())
+	year := now.Year()
+
+	userStats, rankErr := sw.GetMonthlyRank(month, year)
 	if rankErr != Success {
 		return getResponseOnErr(rankErr, sw.config)
 	}
@@ -104,14 +111,7 @@ func (sw *Swears) printMonthlyRank() string {
 		return sw.config.OnUserFetchErr
 	}
 
-	var response bytes.Buffer
-	for i, userStat := range userStats {
-		user := getUserById(users, userStat.UserId)
-		rankLine := fmt.Sprintf("%d. *%s*: %d swears\n", i+1, user.Name, userStat.SwearCount)
-		response.WriteString(rankLine)
-	}
-
-	return response.String()
+	return formatMonthlyRank(sw.config, month, year, users, userStats)
 }
 
 func (sw *Swears) addRule(rule string) string {
@@ -120,16 +120,83 @@ func (sw *Swears) addRule(rule string) string {
 		return getResponseOnErr(err, sw.config)
 	}
 
-	return fmt.Sprintf(sw.config.OnAddRuleResponse, rule)
+	return formatAddRuleResponse(sw.config.OnAddRuleResponse, rule)
 }
 
-func getUserById(users []slack.User, id string) *slack.User {
+func getUserById(users []slack.User, id string) (slack.User, bool) {
 	for _, user := range users {
 		if user.ID == id {
-			return &user
+			return user, true
 		}
 	}
-	return nil
+	return slack.User{}, false
+}
+
+func formatAddRuleResponse(format string, rule string) string {
+	params := map[string]string{"rule": rule}
+	return utils.ParamFormat(format, params)
+}
+
+func formatSwearsResponse(lineFormat string, swearFormat string, swears []string) string {
+	var buffer bytes.Buffer
+	for i, swear := range swears {
+		buffer.WriteString(formatSwear(swearFormat, swear, i+1))
+		buffer.WriteString(", ")
+	}
+
+	result := strings.Trim(buffer.String(), ", ")
+	params := map[string]string{"swears": result, "count": strconv.Itoa(len(swears))}
+	return utils.ParamFormat(lineFormat, params)
+}
+
+func formatSwear(format string, swear string, index int) string {
+	params := map[string]string{"swear": swear, "index": strconv.Itoa(index)}
+	return utils.ParamFormat(format, params)
+}
+
+func formatMonthlyRank(
+	config SwearsConfig,
+	month int,
+	year int,
+	users []slack.User,
+	userStats []*UserStats) string {
+
+	header := formatMonthlyRankHeader(config.MonhlyRankHeaderFormat, config.MonthNames, month, year)
+	rankLines := formatRankLines(config.RankLineFormat, users, userStats)
+	return fmt.Sprintf("%s\n%s", header, rankLines)
+}
+
+func formatMonthlyRankHeader(headerFormat string, monthNames []string, month int, year int) string {
+	params := map[string]string{
+		"month":    monthNames[month-1],
+		"monthnum": strconv.Itoa(month),
+		"year":     strconv.Itoa(year),
+	}
+	return utils.ParamFormat(headerFormat, params)
+}
+
+func formatRankLines(lineFormat string, users []slack.User, userStats []*UserStats) string {
+	var buffer bytes.Buffer
+	for i, userStat := range userStats {
+		user, ok := getUserById(users, userStat.UserId)
+		if !ok {
+			user.Name = "unknown"
+		}
+
+		buffer.WriteString(formatRankLine(lineFormat, user, userStat.SwearCount, i+1))
+		buffer.WriteString("\n")
+	}
+
+	return buffer.String()
+}
+
+func formatRankLine(lineFormat string, user slack.User, count int, index int) string {
+	params := map[string]string{
+		"index": strconv.Itoa(index),
+		"user":  user.Name,
+		"count": strconv.Itoa(count),
+	}
+	return utils.ParamFormat(lineFormat, params)
 }
 
 func getResponseOnErr(err int, config SwearsConfig) string {
