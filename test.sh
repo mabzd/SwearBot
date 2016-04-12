@@ -1,4 +1,5 @@
 #!/bin/sh
+go test ./
 go test ./dictmatch
 go test ./swearbot
 go test ./swears
