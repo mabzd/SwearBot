@@ -21,7 +21,7 @@
 		"MonthNames": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
 
 		"OnUserFetchErr": "Error when fetching slack users!",
-		"OnAddRuleFileReadErr": "Error when reading database!",
+		"OnDictFileReadErr": "Error when reading database!",
 		"OnAddRuleConflictErr": "Similar rule already exists!",
 		"OnAddRuleSaveErr": "Error when saving to database!",
 		"OnInvalidWildcardErr": "Invalid wildcard placement!",

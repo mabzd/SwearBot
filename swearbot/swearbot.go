@@ -23,8 +23,8 @@ func Run(token string, config BotConfig) {
 	rtm := api.NewRTM()
 
 	swears := swears.NewSwears(api, config.SwearsConfig)
-	err := swears.Init()
-	if err != 0 {
+
+	if !swears.Init() {
 		log.Fatal("Initializing swears module failed")
 	}
 

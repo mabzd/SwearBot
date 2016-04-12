@@ -17,7 +17,7 @@ func TestSwears(t *testing.T) {
 	tmpFileName := createTmpDict()
 	defer os.Remove(tmpFileName)
 
-	sw := createSwears(tmpFileName)
+	sw := createSwears(t, tmpFileName)
 	expected := []string{"a", "abcd", "abba"}
 	assertFindSwears(t, sw, "Test A abCD abcde abBA abc", expected)
 }
@@ -26,7 +26,7 @@ func TestAddRule(t *testing.T) {
 	tmpFileName := createTmpDict()
 	defer os.Remove(tmpFileName)
 
-	sw := createSwears(tmpFileName)
+	sw := createSwears(t, tmpFileName)
 	assertAddRule(t, sw, "Fgh*")
 	expected := []string{"fgh", "abcd", "fghi"}
 	assertFindSwears(t, sw, "Test FGH abcd fghi fgi", expected)
@@ -36,16 +36,16 @@ func TestAddRuleFileReadErr(t *testing.T) {
 	tmpFileName := createTmpDict()
 	defer os.Remove(tmpFileName)
 
-	sw := createSwears(tmpFileName)
+	sw := createSwears(t, tmpFileName)
 	os.Remove(tmpFileName)
-	assertAddRuleErr(t, sw, "xxx*", AddRuleFileReadErr)
+	assertAddRuleErr(t, sw, "xxx*", DictFileReadErr)
 }
 
 func TestAddRuleConflictErr(t *testing.T) {
 	tmpFileName := createTmpDict()
 	defer os.Remove(tmpFileName)
 
-	sw := createSwears(tmpFileName)
+	sw := createSwears(t, tmpFileName)
 	assertAddRuleErr(t, sw, "abc*", AddRuleConflictErr)
 	assertAddRuleErr(t, sw, "ab*", AddRuleConflictErr)
 	assertAddRuleErr(t, sw, "*", AddRuleConflictErr)
@@ -55,7 +55,7 @@ func TestAddRuleInvalidWildcardErr(t *testing.T) {
 	tmpFileName := createTmpDict()
 	defer os.Remove(tmpFileName)
 
-	sw := createSwears(tmpFileName)
+	sw := createSwears(t, tmpFileName)
 	assertAddRuleErr(t, sw, "xx*x", InvalidWildcardErr)
 	assertAddRuleErr(t, sw, "*dd*", InvalidWildcardErr)
 	assertAddRuleErr(t, sw, "**x1", InvalidWildcardErr)
@@ -63,12 +63,16 @@ func TestAddRuleInvalidWildcardErr(t *testing.T) {
 	assertAddRuleErr(t, sw, "**", InvalidWildcardErr)
 }
 
-func createSwears(tmpFilePath string) *Swears {
+func createSwears(t *testing.T, tmpFilePath string) *Swears {
 	config := SwearsConfig{
 		DictFileName: tmpFilePath,
 	}
 	sw := NewSwears(nil, config)
-	sw.LoadSwears()
+	err := sw.LoadSwears()
+	if err != Success {
+		t.Fatalf("Expected to load dictionary without errors, got %v", err)
+	}
+
 	return sw
 }
 

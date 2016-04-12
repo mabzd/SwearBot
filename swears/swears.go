@@ -48,7 +48,7 @@ type SwearsConfig struct {
 	MonthNames               []string
 
 	OnUserFetchErr       string
-	OnAddRuleFileReadErr string
+	OnDictFileReadErr    string
 	OnAddRuleConflictErr string
 	OnAddRuleSaveErr     string
 	OnInvalidWildcardErr string
@@ -68,20 +68,52 @@ type SwearsConfig struct {
 
 func NewSwears(api *slack.Client, config SwearsConfig) *Swears {
 	return &Swears{
-		api:                 api,
-		dict:                dictmatch.NewDict(),
-		addRuleRegex:        regexp.MustCompile(config.AddRuleRegex),
-		monthlyRankRegex:    regexp.MustCompile(config.MonthlyRankRegex),
-		swearNotifyOnRegex:  regexp.MustCompile(config.SwearNotifyOnRegex),
-		swearNotifyOffRegex: regexp.MustCompile(config.SwearNotifyOffRegex),
-		settings:            &AllSettings{UserSettings: map[string][]*UserSettings{}},
-		config:              config,
+		api:      api,
+		dict:     dictmatch.NewDict(),
+		settings: &AllSettings{UserSettings: map[string][]*UserSettings{}},
+		config:   config,
 	}
 }
 
-func (sw *Swears) Init() int {
-	sw.LoadSwears()
-	return sw.LoadSettings()
+func (sw *Swears) Init() bool {
+	var err error
+	var errnum int
+
+	sw.addRuleRegex, err = regexp.Compile(sw.config.AddRuleRegex)
+	if err != nil {
+		log.Printf("Swears: cannot compile AddRuleRegex: %v", err)
+		return false
+	}
+
+	sw.monthlyRankRegex, err = regexp.Compile(sw.config.MonthlyRankRegex)
+	if err != nil {
+		log.Printf("Swears: cannot compile MonthlyRankRegex: %v", err)
+		return false
+	}
+
+	sw.swearNotifyOnRegex, err = regexp.Compile(sw.config.SwearNotifyOnRegex)
+	if err != nil {
+		log.Printf("Swears: cannot compile SwearNotifyOnRegex: %v", err)
+		return false
+	}
+
+	sw.swearNotifyOffRegex, err = regexp.Compile(sw.config.SwearNotifyOffRegex)
+	if err != nil {
+		log.Printf("Swears: cannot compile SwearNotifyOffRegex: %v", err)
+		return false
+	}
+
+	errnum = sw.LoadSwears()
+	if errnum != Success {
+		return false
+	}
+
+	errnum = sw.LoadSettings()
+	if errnum != Success {
+		return false
+	}
+
+	return true
 }
 
 func (sw *Swears) ProcessMention(message string, userId string, channel string) string {
@@ -251,8 +283,8 @@ func formatRankLine(lineFormat string, user slack.User, count int, index int) st
 
 func getResponseOnErr(err int, config SwearsConfig) string {
 	switch err {
-	case AddRuleFileReadErr:
-		return config.OnAddRuleFileReadErr
+	case DictFileReadErr:
+		return config.OnDictFileReadErr
 	case AddRuleConflictErr:
 		return config.OnAddRuleConflictErr
 	case AddRuleSaveErr:

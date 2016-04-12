@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	AddRuleFileReadErr = 21
+	DictFileReadErr    = 21
 	InvalidWildcardErr = 22
 	AddRuleConflictErr = 23
 	AddRuleSaveErr     = 24
@@ -20,7 +20,7 @@ func (sw *Swears) AddRule(rule string) int {
 	file, fileReadErr := os.OpenFile(sw.config.DictFileName, os.O_RDWR|os.O_APPEND, 0666)
 	if fileReadErr != nil {
 		log.Printf("Add rule: Cannot open swear dictionary file: %v", fileReadErr)
-		return AddRuleFileReadErr
+		return DictFileReadErr
 	}
 	defer file.Close()
 
@@ -59,10 +59,11 @@ func (sw *Swears) FindSwears(message string) []string {
 	return swears
 }
 
-func (sw *Swears) LoadSwears() {
+func (sw *Swears) LoadSwears() int {
 	file, err := os.Open(sw.config.DictFileName)
 	if err != nil {
-		log.Fatalf("Error opening swear dictionary file: %v", err)
+		log.Printf("Load swears: Error opening swear dictionary file: %v", err)
+		return DictFileReadErr
 	}
 	defer file.Close()
 
@@ -73,8 +74,11 @@ func (sw *Swears) LoadSwears() {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error reading from swear dictionary file: %v", err)
+		log.Printf("Load swears: Error reading from swear dictionary file: %v", err)
+		return DictFileReadErr
 	}
+
+	return Success
 }
 
 func normalizeWord(word string) string {
