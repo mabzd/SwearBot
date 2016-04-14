@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -54,5 +55,5 @@ func readSlackToken(fileName string) string {
 		log.Fatalf("Cannot read slack token file '%s': %s", fileName, err)
 	}
 
-	return string(bytes)
+	return strings.Trim(string(bytes), "\r\n ")
 }
