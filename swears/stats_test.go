@@ -70,6 +70,44 @@ func TestUnknownMonth(t *testing.T) {
 	assertMonthlyRank(t, sw, 2, 2016, []*UserStats{})
 }
 
+func TestTotalRank(t *testing.T) {
+	tmpFilePath := createTmpStatsPath(t)
+	defer os.Remove(tmpFilePath)
+
+	sw := createStats(tmpFilePath)
+	assertAddSwearCount(t, sw, 1, 2016, "user1", 1)
+	assertAddSwearCount(t, sw, 1, 2016, "user2", 1)
+	assertAddSwearCount(t, sw, 2, 2016, "user1", 2)
+	assertAddSwearCount(t, sw, 3, 2016, "user1", 1)
+	assertAddSwearCount(t, sw, 3, 2016, "user2", 4)
+	assertAddSwearCount(t, sw, 3, 2016, "user3", 3)
+
+	expected := []*UserStats{
+		&UserStats{
+			UserId:     "user2",
+			SwearCount: 5,
+		},
+		&UserStats{
+			UserId:     "user1",
+			SwearCount: 4,
+		},
+		&UserStats{
+			UserId:     "user3",
+			SwearCount: 3,
+		},
+	}
+
+	assertTotalRank(t, sw, expected)
+}
+
+func TestEmptyTotalRank(t *testing.T) {
+	tmpFilePath := createTmpStatsPath(t)
+	defer os.Remove(tmpFilePath)
+
+	sw := createStats(tmpFilePath)
+	assertTotalRank(t, sw, []*UserStats{})
+}
+
 func createTmpStatsPath(t *testing.T) string {
 	fileName := utils.CreateTmpFileName("Stats")
 	if fileName == "" {
@@ -93,11 +131,21 @@ func assertAddSwearCount(t *testing.T, sw *Swears, m int, y int, u string, n int
 }
 
 func assertMonthlyRank(t *testing.T, sw *Swears, m int, y int, expected []*UserStats) {
-	users, err := sw.GetMonthlyRank(m, y)
+	actual, err := sw.GetMonthlyRank(m, y)
 	if err != Success {
 		t.Fatalf("Expected no error when getting monthly rank but got %v", err)
 	}
-	if !reflect.DeepEqual(users, expected) {
+	if !reflect.DeepEqual(actual, expected) {
 		t.Fatal("Monthly rank deep equal failed")
+	}
+}
+
+func assertTotalRank(t *testing.T, sw *Swears, expected []*UserStats) {
+	actual, err := sw.GetTotalRank()
+	if err != Success {
+		t.Fatalf("Expected no error when getting total rank but got %v", err)
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatal("Total rank deep equal failed")
 	}
 }

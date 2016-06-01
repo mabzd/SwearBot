@@ -21,6 +21,7 @@ type Swears struct {
 	addRuleRegex        *regexp.Regexp
 	currMonthRankRegex  *regexp.Regexp
 	prevMonthRankRegex  *regexp.Regexp
+	totalRankRegex      *regexp.Regexp
 	swearNotifyOnRegex  *regexp.Regexp
 	swearNotifyOffRegex *regexp.Regexp
 	settings            *AllSettings
@@ -35,6 +36,7 @@ type SwearsConfig struct {
 	AddRuleRegex        string
 	CurrMonthRankRegex  string
 	PrevMonthRankRegex  string
+	TotalRankRegex      string
 	SwearNotifyOnRegex  string
 	SwearNotifyOffRegex string
 
@@ -45,7 +47,8 @@ type SwearsConfig struct {
 	OnEmptyRankResponse      string
 	OnSwearNotifyOnResponse  string
 	OnSwearNotifyOffResponse string
-	MonhlyRankHeaderFormat   string
+	MonthlyRankHeaderFormat  string
+	TotalRankHeaderFormat    string
 	RankLineFormat           string
 	MonthNames               []string
 
@@ -98,6 +101,11 @@ func (sw *Swears) Init() bool {
 		log.Printf("Swears: cannot compile PrevMonthRankRegex: %v", err)
 	}
 
+	sw.totalRankRegex, err = regexp.Compile(sw.config.TotalRankRegex)
+	if err != nil {
+		log.Printf("Swears: cannot compile TotalRankRegex: %v", err)
+	}
+
 	sw.swearNotifyOnRegex, err = regexp.Compile(sw.config.SwearNotifyOnRegex)
 	if err != nil {
 		log.Printf("Swears: cannot compile SwearNotifyOnRegex: %v", err)
@@ -130,6 +138,10 @@ func (sw *Swears) ProcessMention(message string, userId string, channel string) 
 
 	if sw.prevMonthRankRegex.MatchString(message) {
 		return sw.getPrevMonthRank()
+	}
+
+	if sw.totalRankRegex.MatchString(message) {
+		return sw.getTotalRank()
 	}
 
 	rules := sw.addRuleRegex.FindAllStringSubmatch(message, 1)
@@ -186,8 +198,27 @@ func (sw *Swears) getPrevMonthRank() string {
 	return sw.getRankByMonth(month, year)
 }
 
+func (sw *Swears) getTotalRank() string {
+	userStats, rankErr := sw.GetTotalRank()
+	response := sw.prepareRank(userStats, rankErr)
+	if response != "" {
+		return response
+	}
+
+	return formatTotalRank(sw.config, userStats)
+}
+
 func (sw *Swears) getRankByMonth(month int, year int) string {
 	userStats, rankErr := sw.GetMonthlyRank(month, year)
+	response := sw.prepareRank(userStats, rankErr)
+	if response != "" {
+		return response
+	}
+
+	return formatMonthlyRank(sw.config, month, year, userStats)
+}
+
+func (sw *Swears) prepareRank(userStats []*UserStats, rankErr int) string {
 	if rankErr != Success {
 		return getResponseOnErr(rankErr, sw.config)
 	}
@@ -196,13 +227,12 @@ func (sw *Swears) getRankByMonth(month int, year int) string {
 		return sw.config.OnEmptyRankResponse
 	}
 
-	users, usersErr := sw.api.GetUsers()
-	if usersErr != nil {
-		log.Printf("Monthly rank: Cannot fetch users from slack: %s\n", usersErr)
-		return sw.config.OnUserFetchErr
+	response := fillUserRealNames(userStats, sw.api, sw.config)
+	if response != "" {
+		return response
 	}
 
-	return formatMonthlyRank(sw.config, month, year, users, userStats)
+	return ""
 }
 
 func (sw *Swears) addRule(rule string) string {
@@ -226,6 +256,29 @@ func (sw *Swears) setSwearNotify(userId string, channel string, value string) st
 	}
 
 	return sw.config.OnSwearNotifyOffResponse
+}
+
+func fillUserRealNames(
+	userStats []*UserStats,
+	api *slack.Client,
+	config SwearsConfig) string {
+
+	users, usersErr := api.GetUsers()
+	if usersErr != nil {
+		log.Printf("Swears: Cannot fetch users from slack: %s\n", usersErr)
+		return config.OnUserFetchErr
+	}
+
+	for _, userStat := range userStats {
+		user, ok := getUserById(users, userStat.UserId)
+		if !ok {
+			userStat.UserId = "unknown"
+		} else {
+			userStat.UserId = user.Name
+		}
+	}
+
+	return ""
 }
 
 func getUserById(users []slack.User, id string) (slack.User, bool) {
@@ -263,11 +316,19 @@ func formatMonthlyRank(
 	config SwearsConfig,
 	month int,
 	year int,
-	users []slack.User,
 	userStats []*UserStats) string {
 
-	header := formatMonthlyRankHeader(config.MonhlyRankHeaderFormat, config.MonthNames, month, year)
-	rankLines := formatRankLines(config.RankLineFormat, users, userStats)
+	header := formatMonthlyRankHeader(config.MonthlyRankHeaderFormat, config.MonthNames, month, year)
+	rankLines := formatRankLines(config.RankLineFormat, userStats)
+	return fmt.Sprintf("%s\n%s", header, rankLines)
+}
+
+func formatTotalRank(
+	config SwearsConfig,
+	userStats []*UserStats) string {
+
+	header := config.TotalRankHeaderFormat
+	rankLines := formatRankLines(config.RankLineFormat, userStats)
 	return fmt.Sprintf("%s\n%s", header, rankLines)
 }
 
@@ -280,25 +341,21 @@ func formatMonthlyRankHeader(headerFormat string, monthNames []string, month int
 	return utils.ParamFormat(headerFormat, params)
 }
 
-func formatRankLines(lineFormat string, users []slack.User, userStats []*UserStats) string {
+func formatRankLines(lineFormat string, userStats []*UserStats) string {
 	var buffer bytes.Buffer
 	for i, userStat := range userStats {
-		user, ok := getUserById(users, userStat.UserId)
-		if !ok {
-			user.Name = "unknown"
-		}
-
-		buffer.WriteString(formatRankLine(lineFormat, user, userStat.SwearCount, i+1))
+		line := formatRankLine(lineFormat, userStat.UserId, userStat.SwearCount, i+1)
+		buffer.WriteString(line)
 		buffer.WriteString("\n")
 	}
 
 	return buffer.String()
 }
 
-func formatRankLine(lineFormat string, user slack.User, count int, index int) string {
+func formatRankLine(lineFormat string, user string, count int, index int) string {
 	params := map[string]string{
 		"index": strconv.Itoa(index),
-		"user":  user.Name,
+		"user":  user,
 		"count": strconv.Itoa(count),
 	}
 	return utils.ParamFormat(lineFormat, params)

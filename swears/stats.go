@@ -65,6 +65,15 @@ func (sw *Swears) GetMonthlyRank(month int, year int) ([]*UserStats, int) {
 	return getMonthlyRank(stats, month, year), Success
 }
 
+func (sw *Swears) GetTotalRank() ([]*UserStats, int) {
+	stats, err := readStats(sw.config.StatsFileName)
+	if err != Success {
+		return nil, err
+	}
+
+	return getTotalRank(stats), Success
+}
+
 func createStatsFileIfNotExist(fileName string) int {
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		stats := &AllStats{
@@ -145,6 +154,28 @@ func getMonthlyRank(stats *AllStats, month int, year int) []*UserStats {
 	}
 	sort.Sort(BySwearCount(monthStats.Users))
 	return monthStats.Users
+}
+
+func getTotalRank(stats *AllStats) []*UserStats {
+	userIdToSwears := make(map[string]int)
+	for _, monthStats := range stats.Months {
+		for _, userStats := range monthStats.Users {
+			userId := userStats.UserId
+			swearCount := userIdToSwears[userId]
+			userIdToSwears[userId] = swearCount + userStats.SwearCount
+		}
+	}
+	totalRank := toUserStats(userIdToSwears)
+	sort.Sort(BySwearCount(totalRank))
+	return totalRank
+}
+
+func toUserStats(userIdToSwears map[string]int) []*UserStats {
+	userStats := []*UserStats{}
+	for userId, swears := range userIdToSwears {
+		userStats = append(userStats, &UserStats{UserId: userId, SwearCount: swears})
+	}
+	return userStats
 }
 
 func getUserStatsById(users []*UserStats, userId string) *UserStats {

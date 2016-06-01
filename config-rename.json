@@ -7,6 +7,7 @@
 		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*$",
 		"CurrMonthRankRegex": "(?i)^\\s*curr\\s+rank\\s*$",
 		"PrevMonthRankRegex": "(?i)^\\s*prev\\s+rank\\s*$",
+		"TotalRankRegex": "(?i)^\\s*total\\s+rank\\s*$",
 		"SwearNotifyOnRegex": "(?i)^\\s*notify\\s+on\\s*$",
 		"SwearNotifyOffRegex": "(?i)^\\s*notify\\s+off\\s*$",
 
@@ -17,7 +18,8 @@
 		"OnEmptyRankResponse": "Rank is empty.",
 		"OnSwearNotifyOnResponse": "Swear notification is on",
 		"OnSwearNotifyOffResponse": "Swear notification is off",
-		"MonhlyRankHeaderFormat": "*Monthly Rank* - {month} {year}",
+		"MonthlyRankHeaderFormat": "*Monthly Rank* - {month} {year}",
+		"TotalRankHeaderFormat": "*Total Rank*",
 		"RankLineFormat": "{index}. *{user}*: {count} swears",
 		"MonthNames": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
 
