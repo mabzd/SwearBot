@@ -19,7 +19,8 @@ type Swears struct {
 	api                 *slack.Client
 	dict                *dictmatch.Dict
 	addRuleRegex        *regexp.Regexp
-	monthlyRankRegex    *regexp.Regexp
+	currMonthRankRegex  *regexp.Regexp
+	prevMonthRankRegex  *regexp.Regexp
 	swearNotifyOnRegex  *regexp.Regexp
 	swearNotifyOffRegex *regexp.Regexp
 	settings            *AllSettings
@@ -32,7 +33,8 @@ type SwearsConfig struct {
 	SettingsFileName string
 
 	AddRuleRegex        string
-	MonthlyRankRegex    string
+	CurrMonthRankRegex  string
+	PrevMonthRankRegex  string
 	SwearNotifyOnRegex  string
 	SwearNotifyOffRegex string
 
@@ -85,10 +87,15 @@ func (sw *Swears) Init() bool {
 		return false
 	}
 
-	sw.monthlyRankRegex, err = regexp.Compile(sw.config.MonthlyRankRegex)
+	sw.currMonthRankRegex, err = regexp.Compile(sw.config.CurrMonthRankRegex)
 	if err != nil {
-		log.Printf("Swears: cannot compile MonthlyRankRegex: %v", err)
+		log.Printf("Swears: cannot compile CurrMonthRankRegex: %v", err)
 		return false
+	}
+
+	sw.prevMonthRankRegex, err = regexp.Compile(sw.config.PrevMonthRankRegex)
+	if err != nil {
+		log.Printf("Swears: cannot compile PrevMonthRankRegex: %v", err)
 	}
 
 	sw.swearNotifyOnRegex, err = regexp.Compile(sw.config.SwearNotifyOnRegex)
@@ -117,8 +124,12 @@ func (sw *Swears) Init() bool {
 }
 
 func (sw *Swears) ProcessMention(message string, userId string, channel string) string {
-	if sw.monthlyRankRegex.MatchString(message) {
-		return sw.printMonthlyRank()
+	if sw.currMonthRankRegex.MatchString(message) {
+		return sw.getCurrMonthRank()
+	}
+
+	if sw.prevMonthRankRegex.MatchString(message) {
+		return sw.getPrevMonthRank()
 	}
 
 	rules := sw.addRuleRegex.FindAllStringSubmatch(message, 1)
@@ -159,11 +170,23 @@ func (sw *Swears) ProcessMessage(message string, userId string, channel string) 
 	return ""
 }
 
-func (sw *Swears) printMonthlyRank() string {
+func (sw *Swears) getCurrMonthRank() string {
 	now := time.Now()
 	month := int(now.Month())
 	year := now.Year()
 
+	return sw.getRankByMonth(month, year)
+}
+
+func (sw *Swears) getPrevMonthRank() string {
+	prevMonth := utils.LastDayOfPrevMonth(time.Now())
+	month := int(prevMonth.Month())
+	year := prevMonth.Year()
+
+	return sw.getRankByMonth(month, year)
+}
+
+func (sw *Swears) getRankByMonth(month int, year int) string {
 	userStats, rankErr := sw.GetMonthlyRank(month, year)
 	if rankErr != Success {
 		return getResponseOnErr(rankErr, sw.config)

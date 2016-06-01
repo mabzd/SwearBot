@@ -5,7 +5,8 @@
 		"SettingsFileName": "settings.json",
 
 		"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*$",
-		"MonthlyRankRegex": "(?i)^\\s*monthly\\s+rank\\s*$",
+		"CurrMonthRankRegex": "(?i)^\\s*curr\\s+rank\\s*$",
+		"PrevMonthRankRegex": "(?i)^\\s*prev\\s+rank\\s*$",
 		"SwearNotifyOnRegex": "(?i)^\\s*notify\\s+on\\s*$",
 		"SwearNotifyOffRegex": "(?i)^\\s*notify\\s+off\\s*$",
 
