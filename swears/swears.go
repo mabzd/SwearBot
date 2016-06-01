@@ -86,35 +86,35 @@ func (sw *Swears) Init() bool {
 
 	sw.addRuleRegex, err = regexp.Compile(sw.config.AddRuleRegex)
 	if err != nil {
-		log.Printf("Swears: cannot compile AddRuleRegex: %v", err)
+		log.Printf("Swears: cannot compile AddRuleRegex: %v\n", err)
 		return false
 	}
 
 	sw.currMonthRankRegex, err = regexp.Compile(sw.config.CurrMonthRankRegex)
 	if err != nil {
-		log.Printf("Swears: cannot compile CurrMonthRankRegex: %v", err)
+		log.Printf("Swears: cannot compile CurrMonthRankRegex: %v\n", err)
 		return false
 	}
 
 	sw.prevMonthRankRegex, err = regexp.Compile(sw.config.PrevMonthRankRegex)
 	if err != nil {
-		log.Printf("Swears: cannot compile PrevMonthRankRegex: %v", err)
+		log.Printf("Swears: cannot compile PrevMonthRankRegex: %v\n", err)
 	}
 
 	sw.totalRankRegex, err = regexp.Compile(sw.config.TotalRankRegex)
 	if err != nil {
-		log.Printf("Swears: cannot compile TotalRankRegex: %v", err)
+		log.Printf("Swears: cannot compile TotalRankRegex: %v\n", err)
 	}
 
 	sw.swearNotifyOnRegex, err = regexp.Compile(sw.config.SwearNotifyOnRegex)
 	if err != nil {
-		log.Printf("Swears: cannot compile SwearNotifyOnRegex: %v", err)
+		log.Printf("Swears: cannot compile SwearNotifyOnRegex: %v\n", err)
 		return false
 	}
 
 	sw.swearNotifyOffRegex, err = regexp.Compile(sw.config.SwearNotifyOffRegex)
 	if err != nil {
-		log.Printf("Swears: cannot compile SwearNotifyOffRegex: %v", err)
+		log.Printf("Swears: cannot compile SwearNotifyOffRegex: %v\n", err)
 		return false
 	}
 
@@ -392,7 +392,7 @@ func getResponseOnErr(err int, config SwearsConfig) string {
 	case SettingsSaveErr:
 		return config.OnSettingsSaveErr
 	default:
-		log.Printf("Swears: No response for error code %d!", err)
+		log.Printf("Swears: No response for error code %d!\n", err)
 		return fmt.Sprintf("Error #%v", err)
 	}
 }

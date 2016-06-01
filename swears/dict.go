@@ -19,7 +19,7 @@ const (
 func (sw *Swears) AddRule(rule string) int {
 	file, fileReadErr := os.OpenFile(sw.config.DictFileName, os.O_RDWR|os.O_APPEND, 0666)
 	if fileReadErr != nil {
-		log.Printf("Add rule: Cannot open swear dictionary file: %v", fileReadErr)
+		log.Printf("Add rule: Cannot open swear dictionary file: %v\n", fileReadErr)
 		return DictFileReadErr
 	}
 	defer file.Close()
@@ -38,7 +38,7 @@ func (sw *Swears) AddRule(rule string) int {
 
 	_, saveErr := file.WriteString(fmt.Sprintf("%s\n", normRule))
 	if saveErr != nil {
-		log.Printf("Add rule: Cannot write string '%s' to swear dictionary file: %v", normRule, saveErr)
+		log.Printf("Add rule: Cannot write string '%s' to swear dictionary file: %v\n", normRule, saveErr)
 		return AddRuleSaveErr
 	}
 
@@ -62,7 +62,7 @@ func (sw *Swears) FindSwears(message string) []string {
 func (sw *Swears) LoadSwears() int {
 	file, err := os.Open(sw.config.DictFileName)
 	if err != nil {
-		log.Printf("Load swears: Error opening swear dictionary file: %v", err)
+		log.Printf("Load swears: Error opening swear dictionary file: %v\n", err)
 		return DictFileReadErr
 	}
 	defer file.Close()
@@ -74,7 +74,7 @@ func (sw *Swears) LoadSwears() int {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Printf("Load swears: Error reading from swear dictionary file: %v", err)
+		log.Printf("Load swears: Error reading from swear dictionary file: %v\n", err)
 		return DictFileReadErr
 	}
 
