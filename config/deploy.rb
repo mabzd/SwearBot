@@ -3,7 +3,7 @@ lock '3.4.0'
 set :application, "swearbot"
 set :repo_url, "git@github.com:mabzd/SwearBot.git"
 
-set :linked_files, %w(bin/config.json log.txt)
+set :linked_files, %w(bin/token.txt log.txt)
 set :keep_releases, 5
 set :deploy_to, "/var/go/swearbot"
 
@@ -11,8 +11,9 @@ namespace :app do
   task :compile do
     on roles(:app) do
       execute "cd #{current_path} && mkdir -p bin"
-      execute "cd #{current_path} && cp swears.txt bin/swears.txt"
-      execute "cd #{current_path} && GOPATH=/home/michal/go go build -o ./bin/swbot.exe main.go"
+      execute "cd #{current_path} && cp -u swears.txt bin/swears.txt"
+      execute "cd #{current_path} && cp -u config-rename.json bin/config.json"
+      execute "cd #{current_path} && GOPATH=$HOME/go go build -o ./bin/swbot.exe main.go"
     end
   end
 
