@@ -18,10 +18,11 @@ GEM
 
 PLATFORMS
   ruby
+  x86-mingw32
 
 DEPENDENCIES
   airbrussh
   capistrano
 
 BUNDLED WITH
-   1.10.6
+   1.12.5

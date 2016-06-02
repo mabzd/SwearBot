@@ -3,7 +3,7 @@ lock '3.4.0'
 set :application, "swearbot"
 set :repo_url, "git@github.com:mabzd/SwearBot.git"
 
-set :linked_files, %w(bin/token.txt log.txt)
+set :linked_files, %w(bin/token.txt bin/log.txt bin/config.json bin/settings.json bin/swears.txt)
 set :keep_releases, 5
 set :deploy_to, "/var/go/swearbot"
 
@@ -27,4 +27,5 @@ namespace :app do
 end
 
 after "deploy", "app:compile"
+after "deploy", "app:stop"
 after "deploy", "app:start"
