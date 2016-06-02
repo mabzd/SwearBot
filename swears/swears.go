@@ -227,12 +227,7 @@ func (sw *Swears) prepareRank(userStats []*UserStats, rankErr int) string {
 		return sw.config.OnEmptyRankResponse
 	}
 
-	response := fillUserRealNames(userStats, sw.api, sw.config)
-	if response != "" {
-		return response
-	}
-
-	return ""
+	return fillUserRealNames(userStats, sw.api, sw.config)
 }
 
 func (sw *Swears) addRule(rule string) string {
