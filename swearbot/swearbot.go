@@ -1,7 +1,8 @@
 package swearbot
 
 import (
-	"../swears"
+	"../mods"
+	"../mods/modswears"
 	"fmt"
 	"github.com/nlopes/slack"
 	"log"
@@ -10,21 +11,21 @@ import (
 
 var botMentionRegex *regexp.Regexp = nil
 
-type BotConfig struct {
-	SwearsConfig swears.SwearsConfig
-}
-
-func Run(token string, config BotConfig) {
-
+func Run(token string) {
 	var connected bool = false
 
-	api := slack.New(token)
-	api.SetDebug(false)
-	rtm := api.NewRTM()
+	slackClient := slack.New(token)
+	slackClient.SetDebug(false)
+	rtm := slackClient.NewRTM()
 
-	swears := swears.NewSwears(api, config.SwearsConfig)
+	modState := mods.NewModState(slackClient)
+	if modState == nil {
+		log.Fatal("Initializing bot modules failed")
+	}
 
-	if !swears.Init() {
+	swears := modswears.NewModSwears()
+
+	if !swears.Init(modState) {
 		log.Fatal("Initializing swears module failed")
 	}
 

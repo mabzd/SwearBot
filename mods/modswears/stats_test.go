@@ -1,7 +1,7 @@
-package swears
+package modswears
 
 import (
-	"../utils"
+	"../../utils"
 	"io/ioutil"
 	"log"
 	"os"
@@ -17,9 +17,9 @@ func TestAddSwears(t *testing.T) {
 	tmpFilePath := createTmpStatsPath(t)
 	defer os.Remove(tmpFilePath)
 
-	sw := createStats(tmpFilePath)
-	assertAddSwearCount(t, sw, 1, 2016, "user1", 3)
-	assertAddSwearCount(t, sw, 1, 2016, "user1", 2)
+	mod := createStats(tmpFilePath)
+	assertAddSwearCount(t, mod, 1, 2016, "user1", 3)
+	assertAddSwearCount(t, mod, 1, 2016, "user1", 2)
 
 	expected := []*UserStats{
 		&UserStats{
@@ -28,19 +28,19 @@ func TestAddSwears(t *testing.T) {
 		},
 	}
 
-	assertMonthlyRank(t, sw, 1, 2016, expected)
+	assertMonthlyRank(t, mod, 1, 2016, expected)
 }
 
 func TestRankOrder(t *testing.T) {
 	tmpFilePath := createTmpStatsPath(t)
 	defer os.Remove(tmpFilePath)
 
-	sw := createStats(tmpFilePath)
-	assertAddSwearCount(t, sw, 1, 2016, "user1", 3)
-	assertAddSwearCount(t, sw, 1, 2016, "user2", 4)
-	assertAddSwearCount(t, sw, 1, 2016, "user1", 2)
-	assertAddSwearCount(t, sw, 1, 2016, "user3", 6)
-	assertAddSwearCount(t, sw, 2, 2016, "user1", 10)
+	mod := createStats(tmpFilePath)
+	assertAddSwearCount(t, mod, 1, 2016, "user1", 3)
+	assertAddSwearCount(t, mod, 1, 2016, "user2", 4)
+	assertAddSwearCount(t, mod, 1, 2016, "user1", 2)
+	assertAddSwearCount(t, mod, 1, 2016, "user3", 6)
+	assertAddSwearCount(t, mod, 2, 2016, "user1", 10)
 
 	expected := []*UserStats{
 		&UserStats{
@@ -57,30 +57,30 @@ func TestRankOrder(t *testing.T) {
 		},
 	}
 
-	assertMonthlyRank(t, sw, 1, 2016, expected)
+	assertMonthlyRank(t, mod, 1, 2016, expected)
 }
 
 func TestUnknownMonth(t *testing.T) {
 	tmpFilePath := createTmpStatsPath(t)
 	defer os.Remove(tmpFilePath)
 
-	sw := createStats(tmpFilePath)
-	assertAddSwearCount(t, sw, 1, 2016, "user1", 1)
+	mod := createStats(tmpFilePath)
+	assertAddSwearCount(t, mod, 1, 2016, "user1", 1)
 
-	assertMonthlyRank(t, sw, 2, 2016, []*UserStats{})
+	assertMonthlyRank(t, mod, 2, 2016, []*UserStats{})
 }
 
 func TestTotalRank(t *testing.T) {
 	tmpFilePath := createTmpStatsPath(t)
 	defer os.Remove(tmpFilePath)
 
-	sw := createStats(tmpFilePath)
-	assertAddSwearCount(t, sw, 1, 2016, "user1", 1)
-	assertAddSwearCount(t, sw, 1, 2016, "user2", 1)
-	assertAddSwearCount(t, sw, 2, 2016, "user1", 2)
-	assertAddSwearCount(t, sw, 3, 2016, "user1", 1)
-	assertAddSwearCount(t, sw, 3, 2016, "user2", 4)
-	assertAddSwearCount(t, sw, 3, 2016, "user3", 3)
+	mod := createStats(tmpFilePath)
+	assertAddSwearCount(t, mod, 1, 2016, "user1", 1)
+	assertAddSwearCount(t, mod, 1, 2016, "user2", 1)
+	assertAddSwearCount(t, mod, 2, 2016, "user1", 2)
+	assertAddSwearCount(t, mod, 3, 2016, "user1", 1)
+	assertAddSwearCount(t, mod, 3, 2016, "user2", 4)
+	assertAddSwearCount(t, mod, 3, 2016, "user3", 3)
 
 	expected := []*UserStats{
 		&UserStats{
@@ -97,15 +97,15 @@ func TestTotalRank(t *testing.T) {
 		},
 	}
 
-	assertTotalRank(t, sw, expected)
+	assertTotalRank(t, mod, expected)
 }
 
 func TestEmptyTotalRank(t *testing.T) {
 	tmpFilePath := createTmpStatsPath(t)
 	defer os.Remove(tmpFilePath)
 
-	sw := createStats(tmpFilePath)
-	assertTotalRank(t, sw, []*UserStats{})
+	mod := createStats(tmpFilePath)
+	assertTotalRank(t, mod, []*UserStats{})
 }
 
 func createTmpStatsPath(t *testing.T) string {
@@ -116,22 +116,21 @@ func createTmpStatsPath(t *testing.T) string {
 	return fileName
 }
 
-func createStats(tmpFilePath string) *Swears {
-	config := SwearsConfig{
-		StatsFileName: tmpFilePath,
-	}
-	return NewSwears(nil, config)
+func createStats(tmpFilePath string) *ModSwears {
+	mod := NewModSwears()
+	mod.statsFileName = tmpFilePath
+	return mod
 }
 
-func assertAddSwearCount(t *testing.T, sw *Swears, m int, y int, u string, n int) {
-	err := sw.AddSwearCount(m, y, u, n)
+func assertAddSwearCount(t *testing.T, mod *ModSwears, m int, y int, u string, n int) {
+	err := mod.AddSwearCount(m, y, u, n)
 	if err != Success {
 		t.Fatalf("Expected no error when adding swears but got %v", err)
 	}
 }
 
-func assertMonthlyRank(t *testing.T, sw *Swears, m int, y int, expected []*UserStats) {
-	actual, err := sw.GetMonthlyRank(m, y)
+func assertMonthlyRank(t *testing.T, mod *ModSwears, m int, y int, expected []*UserStats) {
+	actual, err := mod.GetMonthlyRank(m, y)
 	if err != Success {
 		t.Fatalf("Expected no error when getting monthly rank but got %v", err)
 	}
@@ -140,8 +139,8 @@ func assertMonthlyRank(t *testing.T, sw *Swears, m int, y int, expected []*UserS
 	}
 }
 
-func assertTotalRank(t *testing.T, sw *Swears, expected []*UserStats) {
-	actual, err := sw.GetTotalRank()
+func assertTotalRank(t *testing.T, mod *ModSwears, expected []*UserStats) {
+	actual, err := mod.GetTotalRank()
 	if err != Success {
 		t.Fatalf("Expected no error when getting total rank but got %v", err)
 	}

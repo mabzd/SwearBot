@@ -1,9 +1,10 @@
-package swears
+package modswears
 
 import (
-	"../dictmatch"
-	"../settings"
-	"../utils"
+	"../../dictmatch"
+	"../../mods"
+	"../../settings"
+	"../../utils"
 	"bytes"
 	"fmt"
 	"github.com/nlopes/slack"
@@ -14,10 +15,19 @@ import (
 	"time"
 )
 
-const Success = 0
+const (
+	Success        = 0
+	ConfigFileName = "config.json"
+	DictFileName   = "swears.txt"
+	StatsFileName  = "stats.json"
+)
 
-type Swears struct {
-	api                 *slack.Client
+const (
+	SettingSwearNotify = "ModSwears.SwearNotify"
+)
+
+type ModSwears struct {
+	state               *mods.ModState
 	dict                *dictmatch.Dict
 	addRuleRegex        *regexp.Regexp
 	currMonthRankRegex  *regexp.Regexp
@@ -25,15 +35,12 @@ type Swears struct {
 	totalRankRegex      *regexp.Regexp
 	swearNotifyOnRegex  *regexp.Regexp
 	swearNotifyOffRegex *regexp.Regexp
-	settings            *settings.AllSettings
-	config              SwearsConfig
+	config              *ModSwearsConfig
+	dictFileName        string
+	statsFileName       string
 }
 
-type SwearsConfig struct {
-	DictFileName     string
-	StatsFileName    string
-	SettingsFileName string
-
+type ModSwearsConfig struct {
 	AddRuleRegex        string
 	CurrMonthRankRegex  string
 	PrevMonthRankRegex  string
@@ -72,110 +79,123 @@ type SwearsConfig struct {
 	OnSettingsSaveErr       string
 }
 
-func NewSwears(api *slack.Client, config SwearsConfig) *Swears {
-	return &Swears{
-		api:      api,
-		dict:     dictmatch.NewDict(),
-		settings: nil,
-		config:   config,
+func NewModSwears() *ModSwears {
+	return &ModSwears{
+		dict:   dictmatch.NewDict(),
+		config: &ModSwearsConfig{},
 	}
 }
 
-func (sw *Swears) Init() bool {
+func (mod *ModSwears) Name() string {
+	return "modswears"
+}
+
+func (mod *ModSwears) Init(state *mods.ModState) bool {
 	var err error
 	var errnum int
 
-	sw.addRuleRegex, err = regexp.Compile(sw.config.AddRuleRegex)
+	mod.state = state
+	mod.dictFileName = mods.GetPath(mod, DictFileName)
+	mod.statsFileName = mods.GetPath(mod, StatsFileName)
+	configFileName := mods.GetPath(mod, ConfigFileName)
+
+	err = mods.LoadConfig(configFileName, mod.config)
 	if err != nil {
-		log.Printf("Swears: cannot compile AddRuleRegex: %v\n", err)
+		log.Println("ModSwears: cannot load config.")
 		return false
 	}
 
-	sw.currMonthRankRegex, err = regexp.Compile(sw.config.CurrMonthRankRegex)
+	mod.addRuleRegex, err = regexp.Compile(mod.config.AddRuleRegex)
 	if err != nil {
-		log.Printf("Swears: cannot compile CurrMonthRankRegex: %v\n", err)
+		log.Printf("ModSwears: cannot compile AddRuleRegex: %v\n", err)
 		return false
 	}
 
-	sw.prevMonthRankRegex, err = regexp.Compile(sw.config.PrevMonthRankRegex)
+	mod.currMonthRankRegex, err = regexp.Compile(mod.config.CurrMonthRankRegex)
 	if err != nil {
-		log.Printf("Swears: cannot compile PrevMonthRankRegex: %v\n", err)
-	}
-
-	sw.totalRankRegex, err = regexp.Compile(sw.config.TotalRankRegex)
-	if err != nil {
-		log.Printf("Swears: cannot compile TotalRankRegex: %v\n", err)
-	}
-
-	sw.swearNotifyOnRegex, err = regexp.Compile(sw.config.SwearNotifyOnRegex)
-	if err != nil {
-		log.Printf("Swears: cannot compile SwearNotifyOnRegex: %v\n", err)
+		log.Printf("ModSwears: cannot compile CurrMonthRankRegex: %v\n", err)
 		return false
 	}
 
-	sw.swearNotifyOffRegex, err = regexp.Compile(sw.config.SwearNotifyOffRegex)
+	mod.prevMonthRankRegex, err = regexp.Compile(mod.config.PrevMonthRankRegex)
 	if err != nil {
-		log.Printf("Swears: cannot compile SwearNotifyOffRegex: %v\n", err)
+		log.Printf("ModSwears: cannot compile PrevMonthRankRegex: %v\n", err)
+	}
+
+	mod.totalRankRegex, err = regexp.Compile(mod.config.TotalRankRegex)
+	if err != nil {
+		log.Printf("ModSwears: cannot compile TotalRankRegex: %v\n", err)
+	}
+
+	mod.swearNotifyOnRegex, err = regexp.Compile(mod.config.SwearNotifyOnRegex)
+	if err != nil {
+		log.Printf("ModSwears: cannot compile SwearNotifyOnRegex: %v\n", err)
 		return false
 	}
 
-	errnum = sw.LoadSwears()
+	mod.swearNotifyOffRegex, err = regexp.Compile(mod.config.SwearNotifyOffRegex)
+	if err != nil {
+		log.Printf("ModSwears: cannot compile SwearNotifyOffRegex: %v\n", err)
+		return false
+	}
+
+	errnum = mod.LoadSwears()
 	if errnum != Success {
-		return false
-	}
-
-	sw.settings, errnum = settings.LoadSettings(sw.config.SettingsFileName)
-	if errnum != Success {
+		log.Println("ModSwears: loading swears dictionary failed.")
 		return false
 	}
 
 	return true
 }
 
-func (sw *Swears) ProcessMention(message string, userId string, channelId string) string {
-	if sw.currMonthRankRegex.MatchString(message) {
-		return sw.getCurrMonthRank()
+func (mod *ModSwears) ProcessMention(message string, userId string, channelId string) string {
+	if mod.currMonthRankRegex.MatchString(message) {
+		return mod.getCurrMonthRank()
 	}
 
-	if sw.prevMonthRankRegex.MatchString(message) {
-		return sw.getPrevMonthRank()
+	if mod.prevMonthRankRegex.MatchString(message) {
+		return mod.getPrevMonthRank()
 	}
 
-	if sw.totalRankRegex.MatchString(message) {
-		return sw.getTotalRank()
+	if mod.totalRankRegex.MatchString(message) {
+		return mod.getTotalRank()
 	}
 
-	rules := sw.addRuleRegex.FindAllStringSubmatch(message, 1)
+	rules := mod.addRuleRegex.FindAllStringSubmatch(message, 1)
 	if rules != nil {
-		return sw.addRule(rules[0][1])
+		return mod.addRule(rules[0][1])
 	}
 
-	if sw.swearNotifyOnRegex.MatchString(message) {
-		return sw.setSwearNotify(userId, channelId, "on")
+	if mod.swearNotifyOnRegex.MatchString(message) {
+		return mod.setSwearNotify(userId, channelId, "on")
 	}
 
-	if sw.swearNotifyOffRegex.MatchString(message) {
-		return sw.setSwearNotify(userId, channelId, "off")
+	if mod.swearNotifyOffRegex.MatchString(message) {
+		return mod.setSwearNotify(userId, channelId, "off")
 	}
 
-	return sw.config.OnUnknownCommandResponse
+	return mod.config.OnUnknownCommandResponse
 }
 
-func (sw *Swears) ProcessMessage(message string, userId string, channelId string) string {
-	swears := sw.FindSwears(message)
+func (mod *ModSwears) ProcessMessage(message string, userId string, channelId string) string {
+	swears := mod.FindSwears(message)
 
 	if len(swears) > 0 {
 		now := time.Now()
-		err := sw.AddSwearCount(int(now.Month()), now.Year(), userId, len(swears))
+		err := mod.AddSwearCount(int(now.Month()), now.Year(), userId, len(swears))
 		if err != Success {
-			return getResponseOnErr(err, sw.config)
+			return getResponseOnErr(err, mod.config)
 		}
 
-		swearNotify, exist := sw.settings.GetUserChanSetting(userId, channelId, "SwearNotify")
+		swearNotify, exist := mod.state.GetUserChanSetting(
+			userId,
+			channelId,
+			SettingSwearNotify)
+
 		if exist && swearNotify == "on" {
 			return formatSwearsResponse(
-				sw.config.OnSwearsFoundResponse,
-				sw.config.SwearFormat,
+				mod.config.OnSwearsFoundResponse,
+				mod.config.SwearFormat,
 				swears)
 		}
 	}
@@ -183,85 +203,85 @@ func (sw *Swears) ProcessMessage(message string, userId string, channelId string
 	return ""
 }
 
-func (sw *Swears) getCurrMonthRank() string {
+func (mod *ModSwears) getCurrMonthRank() string {
 	now := time.Now()
 	month := int(now.Month())
 	year := now.Year()
 
-	return sw.getRankByMonth(month, year)
+	return mod.getRankByMonth(month, year)
 }
 
-func (sw *Swears) getPrevMonthRank() string {
+func (mod *ModSwears) getPrevMonthRank() string {
 	prevMonth := utils.LastDayOfPrevMonth(time.Now())
 	month := int(prevMonth.Month())
 	year := prevMonth.Year()
 
-	return sw.getRankByMonth(month, year)
+	return mod.getRankByMonth(month, year)
 }
 
-func (sw *Swears) getTotalRank() string {
-	userStats, rankErr := sw.GetTotalRank()
-	response := sw.prepareRank(userStats, rankErr)
+func (mod *ModSwears) getTotalRank() string {
+	userStats, rankErr := mod.GetTotalRank()
+	response := mod.prepareRank(userStats, rankErr)
 	if response != "" {
 		return response
 	}
 
-	return formatTotalRank(sw.config, userStats)
+	return formatTotalRank(mod.config, userStats)
 }
 
-func (sw *Swears) getRankByMonth(month int, year int) string {
-	userStats, rankErr := sw.GetMonthlyRank(month, year)
-	response := sw.prepareRank(userStats, rankErr)
+func (mod *ModSwears) getRankByMonth(month int, year int) string {
+	userStats, rankErr := mod.GetMonthlyRank(month, year)
+	response := mod.prepareRank(userStats, rankErr)
 	if response != "" {
 		return response
 	}
 
-	return formatMonthlyRank(sw.config, month, year, userStats)
+	return formatMonthlyRank(mod.config, month, year, userStats)
 }
 
-func (sw *Swears) prepareRank(userStats []*UserStats, rankErr int) string {
+func (mod *ModSwears) prepareRank(userStats []*UserStats, rankErr int) string {
 	if rankErr != Success {
-		return getResponseOnErr(rankErr, sw.config)
+		return getResponseOnErr(rankErr, mod.config)
 	}
 
 	if len(userStats) == 0 {
-		return sw.config.OnEmptyRankResponse
+		return mod.config.OnEmptyRankResponse
 	}
 
-	return fillUserRealNames(userStats, sw.api, sw.config)
+	return fillUserRealNames(userStats, mod.state.SlackClient, mod.config)
 }
 
-func (sw *Swears) addRule(rule string) string {
-	err := sw.AddRule(rule)
+func (mod *ModSwears) addRule(rule string) string {
+	err := mod.AddRule(rule)
 	if err != Success {
-		return getResponseOnErr(err, sw.config)
+		return getResponseOnErr(err, mod.config)
 	}
 
-	return formatAddRuleResponse(sw.config.OnAddRuleResponse, rule)
+	return formatAddRuleResponse(mod.config.OnAddRuleResponse, rule)
 }
 
-func (sw *Swears) setSwearNotify(userId string, channelId string, value string) string {
-	sw.settings.SetUserChanSetting(userId, channelId, "SwearNotify", value)
-	err := settings.SaveSettings(sw.config.SettingsFileName, sw.settings)
+func (mod *ModSwears) setSwearNotify(userId string, channelId string, value string) string {
+	mod.state.SetUserChanSetting(userId, channelId, SettingSwearNotify, value)
+	err := mod.state.Save()
 	if err != Success {
-		return getResponseOnErr(err, sw.config)
+		return getResponseOnErr(err, mod.config)
 	}
 
 	if value == "on" {
-		return sw.config.OnSwearNotifyOnResponse
+		return mod.config.OnSwearNotifyOnResponse
 	}
 
-	return sw.config.OnSwearNotifyOffResponse
+	return mod.config.OnSwearNotifyOffResponse
 }
 
 func fillUserRealNames(
 	userStats []*UserStats,
-	api *slack.Client,
-	config SwearsConfig) string {
+	slack *slack.Client,
+	config *ModSwearsConfig) string {
 
-	users, usersErr := api.GetUsers()
+	users, usersErr := slack.GetUsers()
 	if usersErr != nil {
-		log.Printf("Swears: Cannot fetch users from slack: %s\n", usersErr)
+		log.Printf("ModSwears: Cannot fetch users from slack: %s\n", usersErr)
 		return config.OnUserFetchErr
 	}
 
@@ -309,7 +329,7 @@ func formatSwear(format string, swear string, index int) string {
 }
 
 func formatMonthlyRank(
-	config SwearsConfig,
+	config *ModSwearsConfig,
 	month int,
 	year int,
 	userStats []*UserStats) string {
@@ -320,7 +340,7 @@ func formatMonthlyRank(
 }
 
 func formatTotalRank(
-	config SwearsConfig,
+	config *ModSwearsConfig,
 	userStats []*UserStats) string {
 
 	header := config.TotalRankHeaderFormat
@@ -357,7 +377,8 @@ func formatRankLine(lineFormat string, user string, count int, index int) string
 	return utils.ParamFormat(lineFormat, params)
 }
 
-func getResponseOnErr(err int, config SwearsConfig) string {
+//TODO: move settings responses to some general config
+func getResponseOnErr(err int, config *ModSwearsConfig) string {
 	switch err {
 	case DictFileReadErr:
 		return config.OnDictFileReadErr
@@ -388,7 +409,7 @@ func getResponseOnErr(err int, config SwearsConfig) string {
 	case settings.SettingsSaveErr:
 		return config.OnSettingsSaveErr
 	default:
-		log.Printf("Swears: No response for error code %d!\n", err)
+		log.Printf("ModSwears: No response for error code %d!\n", err)
 		return fmt.Sprintf("Error #%v", err)
 	}
 }

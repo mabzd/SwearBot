@@ -1,0 +1,37 @@
+{
+	"AddRuleRegex": "(?i)^\\s*add rule:\\s*([a-z0-9*]+)\\s*$",
+	"CurrMonthRankRegex": "(?i)^\\s*curr\\s+rank\\s*$",
+	"PrevMonthRankRegex": "(?i)^\\s*prev\\s+rank\\s*$",
+	"TotalRankRegex": "(?i)^\\s*total\\s+rank\\s*$",
+	"SwearNotifyOnRegex": "(?i)^\\s*notify\\s+on\\s*$",
+	"SwearNotifyOffRegex": "(?i)^\\s*notify\\s+off\\s*$",
+
+	"SwearFormat": "{index}. *{swear}*",
+	"OnUnknownCommandResponse": "Unknown command.",
+	"OnAddRuleResponse": "Rule '{rule}' added.",
+	"OnSwearsFoundResponse": "{count} swears found: {swears}",
+	"OnEmptyRankResponse": "Rank is empty.",
+	"OnSwearNotifyOnResponse": "Swear notification is on",
+	"OnSwearNotifyOffResponse": "Swear notification is off",
+	"MonthlyRankHeaderFormat": "*Monthly Rank* - {month} {year}",
+	"TotalRankHeaderFormat": "*Total Rank*",
+	"RankLineFormat": "{index}. *{user}*: {count} swears",
+	"MonthNames": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+
+	"OnUserFetchErr": "Error when fetching slack users!",
+	"OnDictFileReadErr": "Error when reading database!",
+	"OnAddRuleConflictErr": "Similar rule already exists!",
+	"OnAddRuleSaveErr": "Error when saving to database!",
+	"OnInvalidWildcardErr": "Invalid wildcard placement!",
+	"OnStatsFileCreateErr": "Error when creating stats file!",
+	"OnStatsFileReadErr": "Error when reading stats file!",
+	"OnStatsUnmarshalErr": "Error when getting stats from JSON!",
+	"OnStatsMarshalErr": "Error when putting stats to JSON!",
+	"OnStatsSaveErr": "Error when saving to stats file!",
+	"OnSettingsFileCreateErr": "Error when creating settings file!",
+	"OnSettingsFileReadErr": "Error when reading settings file!",
+	"OnSettingsUnmarshalErr": "Error when getting settings from JSON!",
+	"OnSettingsMarshalErr": "Error when putting settings to JSON!",
+	"OnSettingsSaveErr": "Error when saving to settings file!"
+}
+

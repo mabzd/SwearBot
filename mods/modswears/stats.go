@@ -1,4 +1,4 @@
-package swears
+package modswears
 
 import (
 	"encoding/json"
@@ -46,18 +46,18 @@ func (a BySwearCount) Less(i, j int) bool {
 	return a[i].SwearCount > a[j].SwearCount
 }
 
-func (sw *Swears) AddSwearCount(month int, year int, name string, count int) int {
-	stats, err := readStats(sw.config.StatsFileName)
+func (mod *ModSwears) AddSwearCount(month int, year int, name string, count int) int {
+	stats, err := readStats(mod.statsFileName)
 	if err != Success {
 		return err
 	}
 
 	addSwearCount(stats, month, year, name, count)
-	return writeStats(sw.config.StatsFileName, stats)
+	return writeStats(mod.statsFileName, stats)
 }
 
-func (sw *Swears) GetMonthlyRank(month int, year int) ([]*UserStats, int) {
-	stats, err := readStats(sw.config.StatsFileName)
+func (mod *ModSwears) GetMonthlyRank(month int, year int) ([]*UserStats, int) {
+	stats, err := readStats(mod.statsFileName)
 	if err != Success {
 		return nil, err
 	}
@@ -65,8 +65,8 @@ func (sw *Swears) GetMonthlyRank(month int, year int) ([]*UserStats, int) {
 	return getMonthlyRank(stats, month, year), Success
 }
 
-func (sw *Swears) GetTotalRank() ([]*UserStats, int) {
-	stats, err := readStats(sw.config.StatsFileName)
+func (mod *ModSwears) GetTotalRank() ([]*UserStats, int) {
+	stats, err := readStats(mod.statsFileName)
 	if err != Success {
 		return nil, err
 	}
@@ -88,20 +88,20 @@ func createStatsFileIfNotExist(fileName string) int {
 func readStats(fileName string) (*AllStats, int) {
 	createErr := createStatsFileIfNotExist(fileName)
 	if createErr != Success {
-		log.Println("Swears: Stats file creation failed.")
+		log.Println("ModSwears: Stats file creation failed.")
 		return nil, StatsFileCreateErr
 	}
 
 	bytes, fileReadErr := ioutil.ReadFile(fileName)
 	if fileReadErr != nil {
-		log.Printf("Swears: Cannot read Swears from file '%s': %s\n", fileName, fileReadErr)
+		log.Printf("ModSwears: Cannot read stats from file '%s': %s\n", fileName, fileReadErr)
 		return nil, StatsFileReadErr
 	}
 
 	var stats AllStats
 	unmarshalErr := json.Unmarshal(bytes, &stats)
 	if unmarshalErr != nil {
-		log.Printf("Swears: Error when unmarshaling Swears from JSON: %s\n", unmarshalErr)
+		log.Printf("ModSwears: Error when unmarshaling stats from JSON: %s\n", unmarshalErr)
 		return nil, StatsUnmarshalErr
 	}
 
@@ -111,13 +111,13 @@ func readStats(fileName string) (*AllStats, int) {
 func writeStats(fileName string, stats *AllStats) int {
 	bytes, marshalErr := json.Marshal(stats)
 	if marshalErr != nil {
-		log.Printf("Swears: Error when marshaling Swears to JSON: %s\n", marshalErr)
+		log.Printf("ModSwears: Error when marshaling stats to JSON: %s\n", marshalErr)
 		return StatsMarshalErr
 	}
 
 	saveErr := ioutil.WriteFile(fileName, bytes, 0666)
 	if saveErr != nil {
-		log.Printf("Swears: Cannot write Swears to file '%s': %s\n", fileName, saveErr)
+		log.Printf("ModSwears: Cannot write stats to file '%s': %s\n", fileName, saveErr)
 		return StatsSaveErr
 	}
 

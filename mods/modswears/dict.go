@@ -1,7 +1,7 @@
-package swears
+package modswears
 
 import (
-	"../dictmatch"
+	"../../dictmatch"
 	"bufio"
 	"fmt"
 	"log"
@@ -16,19 +16,19 @@ const (
 	AddRuleSaveErr     = 24
 )
 
-func (sw *Swears) AddRule(rule string) int {
-	file, fileReadErr := os.OpenFile(sw.config.DictFileName, os.O_RDWR|os.O_APPEND, 0666)
+func (mod *ModSwears) AddRule(rule string) int {
+	file, fileReadErr := os.OpenFile(mod.dictFileName, os.O_RDWR|os.O_APPEND, 0666)
 	if fileReadErr != nil {
-		log.Printf("Add rule: Cannot open swear dictionary file: %v\n", fileReadErr)
+		log.Printf("ModSwears: cannot open swear dictionary file: %v\n", fileReadErr)
 		return DictFileReadErr
 	}
 	defer file.Close()
 
 	normRule := normalizeWord(rule)
 
-	confilctErr := sw.dict.AddEntry(normRule)
+	confilctErr := mod.dict.AddEntry(normRule)
 	if confilctErr != nil {
-		log.Printf("Add rule: %s", confilctErr.Desc)
+		log.Printf("ModSwears: add rule: %s\n", confilctErr.Desc)
 		if confilctErr.ErrType == dictmatch.InvalidWildardPlacementErr {
 			return InvalidWildcardErr
 		}
@@ -38,19 +38,19 @@ func (sw *Swears) AddRule(rule string) int {
 
 	_, saveErr := file.WriteString(fmt.Sprintf("%s\n", normRule))
 	if saveErr != nil {
-		log.Printf("Add rule: Cannot write string '%s' to swear dictionary file: %v\n", normRule, saveErr)
+		log.Printf("ModSwears: cannot write string '%s' to swear dictionary file: %v\n", normRule, saveErr)
 		return AddRuleSaveErr
 	}
 
 	return Success
 }
 
-func (sw *Swears) FindSwears(message string) []string {
+func (mod *ModSwears) FindSwears(message string) []string {
 	swears := make([]string, 0)
 	words := strings.Fields(message)
 	for _, word := range words {
 		word = normalizeWord(word)
-		success, _ := sw.dict.Match(word)
+		success, _ := mod.dict.Match(word)
 		if success {
 			swears = append(swears, word)
 		}
@@ -59,10 +59,10 @@ func (sw *Swears) FindSwears(message string) []string {
 	return swears
 }
 
-func (sw *Swears) LoadSwears() int {
-	file, err := os.Open(sw.config.DictFileName)
+func (mod *ModSwears) LoadSwears() int {
+	file, err := os.Open(mod.dictFileName)
 	if err != nil {
-		log.Printf("Load swears: Error opening swear dictionary file: %v\n", err)
+		log.Printf("ModSwears: Error opening swear dictionary file: %v\n", err)
 		return DictFileReadErr
 	}
 	defer file.Close()
@@ -70,11 +70,11 @@ func (sw *Swears) LoadSwears() int {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		word := normalizeWord(scanner.Text())
-		sw.dict.AddEntry(word)
+		mod.dict.AddEntry(word)
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Printf("Load swears: Error reading from swear dictionary file: %v\n", err)
+		log.Printf("ModSwears: Error reading from swear dictionary file: %v\n", err)
 		return DictFileReadErr
 	}
 
