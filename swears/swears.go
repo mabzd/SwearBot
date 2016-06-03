@@ -2,6 +2,7 @@ package swears
 
 import (
 	"../dictmatch"
+	"../settings"
 	"../utils"
 	"bytes"
 	"fmt"
@@ -24,7 +25,7 @@ type Swears struct {
 	totalRankRegex      *regexp.Regexp
 	swearNotifyOnRegex  *regexp.Regexp
 	swearNotifyOffRegex *regexp.Regexp
-	settings            *AllSettings
+	settings            *settings.AllSettings
 	config              SwearsConfig
 }
 
@@ -75,7 +76,7 @@ func NewSwears(api *slack.Client, config SwearsConfig) *Swears {
 	return &Swears{
 		api:      api,
 		dict:     dictmatch.NewDict(),
-		settings: &AllSettings{UserSettings: map[string][]*UserSettings{}},
+		settings: nil,
 		config:   config,
 	}
 }
@@ -123,7 +124,7 @@ func (sw *Swears) Init() bool {
 		return false
 	}
 
-	errnum = sw.LoadSettings()
+	sw.settings, errnum = settings.LoadSettings(sw.config.SettingsFileName)
 	if errnum != Success {
 		return false
 	}
@@ -241,7 +242,7 @@ func (sw *Swears) addRule(rule string) string {
 
 func (sw *Swears) setSwearNotify(userId string, channel string, value string) string {
 	sw.settings.SetSetting(userId, channel, "SwearNotify", value)
-	err := sw.SaveSettings()
+	err := settings.SaveSettings(sw.config.SettingsFileName, sw.settings)
 	if err != Success {
 		return getResponseOnErr(err, sw.config)
 	}
@@ -376,15 +377,15 @@ func getResponseOnErr(err int, config SwearsConfig) string {
 		return config.OnStatsMarshalErr
 	case StatsSaveErr:
 		return config.OnStatsSaveErr
-	case SettingsFileCreateErr:
+	case settings.SettingsFileCreateErr:
 		return config.OnSettingsFileCreateErr
-	case SettingsFileReadErr:
+	case settings.SettingsFileReadErr:
 		return config.OnSettingsFileReadErr
-	case SettingsUnmarshalErr:
+	case settings.SettingsUnmarshalErr:
 		return config.OnSettingsUnmarshalErr
-	case SettingsMarshalErr:
+	case settings.SettingsMarshalErr:
 		return config.OnSettingsMarshalErr
-	case SettingsSaveErr:
+	case settings.SettingsSaveErr:
 		return config.OnSettingsSaveErr
 	default:
 		log.Printf("Swears: No response for error code %d!\n", err)

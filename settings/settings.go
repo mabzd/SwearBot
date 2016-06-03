@@ -1,4 +1,4 @@
-package swears
+package settings
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	Success               = 0
 	SettingsFileCreateErr = 31
 	SettingsFileReadErr   = 32
 	SettingsUnmarshalErr  = 33
@@ -71,32 +72,7 @@ func (settings *AllSettings) SetSetting(
 	settings.UserSettings[userId] = userSettings
 }
 
-func (sw *Swears) LoadSettings() int {
-	settings, err := readSettings(sw.config.SettingsFileName)
-	if err != Success {
-		return err
-	}
-
-	sw.settings = settings
-	return Success
-}
-
-func (sw *Swears) SaveSettings() int {
-	return writeSettings(sw.config.SettingsFileName, sw.settings)
-}
-
-func createSettingsFileIfNotExist(fileName string) int {
-	if _, err := os.Stat(fileName); os.IsNotExist(err) {
-		settings := &AllSettings{
-			UserSettings: make(map[string][]*UserSettings),
-		}
-		return writeSettings(fileName, settings)
-	}
-
-	return Success
-}
-
-func readSettings(fileName string) (*AllSettings, int) {
+func LoadSettings(fileName string) (*AllSettings, int) {
 	createErr := createSettingsFileIfNotExist(fileName)
 	if createErr != Success {
 		log.Println("Settings: Settings file creation failed.")
@@ -119,7 +95,7 @@ func readSettings(fileName string) (*AllSettings, int) {
 	return &settings, Success
 }
 
-func writeSettings(fileName string, settings *AllSettings) int {
+func SaveSettings(fileName string, settings *AllSettings) int {
 	bytes, marshalErr := json.Marshal(settings)
 	if marshalErr != nil {
 		log.Printf("Settings: Error when marshaling settings to JSON: %s\n", marshalErr)
@@ -130,6 +106,17 @@ func writeSettings(fileName string, settings *AllSettings) int {
 	if saveErr != nil {
 		log.Printf("Settings: Cannot write settings to file '%s': %s\n", fileName, saveErr)
 		return SettingsSaveErr
+	}
+
+	return Success
+}
+
+func createSettingsFileIfNotExist(fileName string) int {
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		settings := &AllSettings{
+			UserSettings: make(map[string][]*UserSettings),
+		}
+		return SaveSettings(fileName, settings)
 	}
 
 	return Success

@@ -1,4 +1,4 @@
-package swears
+package settings
 
 import (
 	"../utils"
