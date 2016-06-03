@@ -86,11 +86,9 @@ func (mc *ModContainer) InitMods(slackClient *slack.Client) bool {
 		log.Println("ModContainer: mod state failed to initialize")
 		return false
 	}
-
 	modsRegistered := []string{}
 	modsEnabled := []string{}
 	modsInitialized := []string{}
-
 	for _, modInfo := range mc.modInfos {
 		if modInfo.Instance != nil {
 			modsRegistered = append(modsRegistered, modInfo.Name)
@@ -99,23 +97,23 @@ func (mc *ModContainer) InitMods(slackClient *slack.Client) bool {
 				if modInfo.Instance.Init(modState) {
 					modsInitialized = append(modsInitialized, modInfo.Name)
 				} else {
-					log.Printf("ModContainer: mod '%s' failed to initialize\n", modInfo.Name)
+					log.Printf(
+						"ModContainer: mod '%s' failed to initialize\n",
+						modInfo.Name)
 				}
 			}
 		}
 	}
-
 	sort.Sort(ByModPriority(mc.modInfos))
-
 	log.Printf("ModContainer: mod initialization complete "+
 		"(mods active: %d, mods enabled: %d, mods registered: %d)\n",
-		len(modsInitialized), len(modsEnabled), len(modsRegistered))
-
+		len(modsInitialized),
+		len(modsEnabled),
+		len(modsRegistered))
 	if len(modsInitialized) == 0 {
 		log.Println("ModContainer: no active mods")
 		return false
 	}
-
 	log.Printf("ModContainer: active mods: %s\n", strings.Join(modsInitialized, ", "))
 	return true
 }

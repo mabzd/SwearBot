@@ -10,72 +10,77 @@ import (
 )
 
 var botMentionRegex *regexp.Regexp = nil
-
-func registerMods() {
-
-}
+var connected bool = false
 
 func Run(token string) {
-	var connected bool = false
-
 	slackClient := slack.New(token)
 	slackClient.SetDebug(false)
 	rtm := slackClient.NewRTM()
-
-	modContainer := mods.NewModContainer()
-
-	if !modContainer.LoadConfig() {
-		log.Println("Loading mod config failed.")
+	modContainer := createModContainer(slackClient)
+	if modContainer == nil {
+		log.Println("Creating mods failed.")
 		return
 	}
-
-	modContainer.AddMod(modswears.NewModSwears())
-
-	if !modContainer.InitMods(slackClient) {
-		log.Println("Initializing mods failed.")
-		return
-	}
-
 	go rtm.ManageConnection()
-
 	for {
 		select {
 		case msg := <-rtm.IncomingEvents:
-
-			switch ev := msg.Data.(type) {
+			switch event := msg.Data.(type) {
 			case *slack.ConnectedEvent:
-				logInfo(ev.Info)
-				compileMentionRegex(ev.Info.User.ID)
-				connected = true
-
+				onConnect(event.Info)
 			case *slack.MessageEvent:
-				if connected {
-					response := ""
-					message := ev.Text
-					userId := ev.User
-					channel := ev.Channel
-
-					if isMention(message) {
-						message = removeMentions(message)
-						response = modContainer.ProcessMention(message, userId, channel)
-					} else {
-						response = modContainer.ProcessMessage(message, userId, channel)
-					}
-
-					respond(rtm, response, channel)
-				}
-
+				onMessage(rtm, event, modContainer)
 			case *slack.RTMError:
-				log.Printf("RTM Error: %s\n", ev.Error())
-
+				onError(event)
 			case *slack.InvalidAuthEvent:
 				log.Println("Invalid credentials")
 				return
-
 			default:
 			}
 		}
 	}
+}
+
+func createModContainer(slackClient *slack.Client) *mods.ModContainer {
+	modContainer := mods.NewModContainer()
+	if !modContainer.LoadConfig() {
+		return nil
+	}
+	modContainer.AddMod(modswears.NewModSwears())
+	if !modContainer.InitMods(slackClient) {
+		return nil
+	}
+	return modContainer
+}
+
+func onConnect(info *slack.Info) {
+	logInfo(info)
+	compileMentionRegex(info.User.ID)
+	connected = true
+}
+
+func onMessage(
+	rtm *slack.RTM,
+	event *slack.MessageEvent,
+	modContainer *mods.ModContainer) {
+
+	if connected {
+		response := ""
+		message := event.Text
+		userId := event.User
+		channelId := event.Channel
+		if isMention(message) {
+			message = removeMentions(message)
+			response = modContainer.ProcessMention(message, userId, channelId)
+		} else {
+			response = modContainer.ProcessMessage(message, userId, channelId)
+		}
+		respond(rtm, response, channelId)
+	}
+}
+
+func onError(err *slack.RTMError) {
+	log.Printf("RTM Error: %s\n", err.Error())
 }
 
 func compileMentionRegex(botId string) {

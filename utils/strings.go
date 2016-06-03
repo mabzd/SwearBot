@@ -15,6 +15,5 @@ func ParamFormat(format string, params map[string]string) string {
 			format = strings.Replace(format, paramName, paramValue, -1)
 		}
 	}
-
 	return format
 }

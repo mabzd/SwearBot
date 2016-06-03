@@ -51,7 +51,6 @@ func (settings *AllSettings) GetUserChanSetting(
 			return value, ok
 		}
 	}
-
 	return "", false
 }
 
@@ -64,7 +63,6 @@ func (settings *AllSettings) GetUserSetting(
 		value, ok := userSettings.Settings[key]
 		return value, ok
 	}
-
 	return "", false
 }
 
@@ -77,7 +75,6 @@ func (settings *AllSettings) GetChanSetting(
 		value, ok := chanSettings.Settings[key]
 		return value, ok
 	}
-
 	return "", false
 }
 
@@ -97,13 +94,11 @@ func (settings *AllSettings) SetUserChanSetting(
 		userSettings = createUserSettings(userId)
 		settings.UserSettings[userId] = userSettings
 	}
-
 	chanSettings, chanOk := userSettings.ChanSettings[channelId]
 	if !chanOk {
 		chanSettings = createChanSettings(channelId)
 		userSettings.ChanSettings[channelId] = chanSettings
 	}
-
 	chanSettings.Settings[key] = value
 }
 
@@ -117,7 +112,6 @@ func (settings *AllSettings) SetUserSetting(
 		userSettings = createUserSettings(userId)
 		settings.UserSettings[userId] = userSettings
 	}
-
 	userSettings.Settings[key] = value
 }
 
@@ -131,7 +125,6 @@ func (settings *AllSettings) SetChanSetting(
 		chanSettings = createChanSettings(channelId)
 		settings.ChanSettings[channelId] = chanSettings
 	}
-
 	chanSettings.Settings[key] = value
 }
 

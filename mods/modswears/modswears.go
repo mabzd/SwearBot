@@ -89,58 +89,48 @@ func (mod *ModSwears) Name() string {
 func (mod *ModSwears) Init(state *mods.ModState) bool {
 	var err error
 	var errnum int
-
 	mod.state = state
 	mod.dictFileName = mods.GetPath(mod, DictFileName)
 	mod.statsFileName = mods.GetPath(mod, StatsFileName)
 	configFileName := mods.GetPath(mod, ConfigFileName)
-
 	err = utils.LoadJson(configFileName, mod.config)
 	if err != nil {
 		log.Println("ModSwears: cannot load config.")
 		return false
 	}
-
 	mod.addRuleRegex, err = regexp.Compile(mod.config.AddRuleRegex)
 	if err != nil {
 		log.Printf("ModSwears: cannot compile AddRuleRegex: %v\n", err)
 		return false
 	}
-
 	mod.currMonthRankRegex, err = regexp.Compile(mod.config.CurrMonthRankRegex)
 	if err != nil {
 		log.Printf("ModSwears: cannot compile CurrMonthRankRegex: %v\n", err)
 		return false
 	}
-
 	mod.prevMonthRankRegex, err = regexp.Compile(mod.config.PrevMonthRankRegex)
 	if err != nil {
 		log.Printf("ModSwears: cannot compile PrevMonthRankRegex: %v\n", err)
 	}
-
 	mod.totalRankRegex, err = regexp.Compile(mod.config.TotalRankRegex)
 	if err != nil {
 		log.Printf("ModSwears: cannot compile TotalRankRegex: %v\n", err)
 	}
-
 	mod.swearNotifyOnRegex, err = regexp.Compile(mod.config.SwearNotifyOnRegex)
 	if err != nil {
 		log.Printf("ModSwears: cannot compile SwearNotifyOnRegex: %v\n", err)
 		return false
 	}
-
 	mod.swearNotifyOffRegex, err = regexp.Compile(mod.config.SwearNotifyOffRegex)
 	if err != nil {
 		log.Printf("ModSwears: cannot compile SwearNotifyOffRegex: %v\n", err)
 		return false
 	}
-
 	errnum = mod.LoadSwears()
 	if errnum != Success {
 		log.Println("ModSwears: loading swears dictionary failed.")
 		return false
 	}
-
 	return true
 }
 
@@ -148,46 +138,37 @@ func (mod *ModSwears) ProcessMention(message string, userId string, channelId st
 	if mod.currMonthRankRegex.MatchString(message) {
 		return mod.getCurrMonthRank()
 	}
-
 	if mod.prevMonthRankRegex.MatchString(message) {
 		return mod.getPrevMonthRank()
 	}
-
 	if mod.totalRankRegex.MatchString(message) {
 		return mod.getTotalRank()
 	}
-
 	rules := mod.addRuleRegex.FindAllStringSubmatch(message, 1)
 	if rules != nil {
 		return mod.addRule(rules[0][1])
 	}
-
 	if mod.swearNotifyOnRegex.MatchString(message) {
 		return mod.setSwearNotify(userId, channelId, "on")
 	}
-
 	if mod.swearNotifyOffRegex.MatchString(message) {
 		return mod.setSwearNotify(userId, channelId, "off")
 	}
-
 	return mod.config.OnUnknownCommandResponse
 }
 
 func (mod *ModSwears) ProcessMessage(message string, userId string, channelId string) string {
 	swears := mod.FindSwears(message)
-
 	if len(swears) > 0 {
 		now := time.Now()
 		err := mod.AddSwearCount(int(now.Month()), now.Year(), userId, len(swears))
 		if err != Success {
 			return getResponseOnErr(err, mod.config)
 		}
-
 		swearNotify, exist := mod.state.GetUserChanSetting(
 			userId,
 			channelId,
 			SettingSwearNotify)
-
 		if exist && swearNotify == "on" {
 			return formatSwearsResponse(
 				mod.config.OnSwearsFoundResponse,
@@ -195,7 +176,6 @@ func (mod *ModSwears) ProcessMessage(message string, userId string, channelId st
 				swears)
 		}
 	}
-
 	return ""
 }
 
@@ -203,7 +183,6 @@ func (mod *ModSwears) getCurrMonthRank() string {
 	now := time.Now()
 	month := int(now.Month())
 	year := now.Year()
-
 	return mod.getRankByMonth(month, year)
 }
 
@@ -211,7 +190,6 @@ func (mod *ModSwears) getPrevMonthRank() string {
 	prevMonth := utils.LastDayOfPrevMonth(time.Now())
 	month := int(prevMonth.Month())
 	year := prevMonth.Year()
-
 	return mod.getRankByMonth(month, year)
 }
 
@@ -221,7 +199,6 @@ func (mod *ModSwears) getTotalRank() string {
 	if response != "" {
 		return response
 	}
-
 	return formatTotalRank(mod.config, userStats)
 }
 
@@ -231,7 +208,6 @@ func (mod *ModSwears) getRankByMonth(month int, year int) string {
 	if response != "" {
 		return response
 	}
-
 	return formatMonthlyRank(mod.config, month, year, userStats)
 }
 
@@ -239,11 +215,9 @@ func (mod *ModSwears) prepareRank(userStats []*UserStats, rankErr int) string {
 	if rankErr != Success {
 		return getResponseOnErr(rankErr, mod.config)
 	}
-
 	if len(userStats) == 0 {
 		return mod.config.OnEmptyRankResponse
 	}
-
 	return fillUserRealNames(userStats, mod.state.SlackClient, mod.config)
 }
 
@@ -252,21 +226,22 @@ func (mod *ModSwears) addRule(rule string) string {
 	if err != Success {
 		return getResponseOnErr(err, mod.config)
 	}
-
 	return formatAddRuleResponse(mod.config.OnAddRuleResponse, rule)
 }
 
-func (mod *ModSwears) setSwearNotify(userId string, channelId string, value string) string {
+func (mod *ModSwears) setSwearNotify(
+	userId string,
+	channelId string,
+	value string) string {
+
 	mod.state.SetUserChanSetting(userId, channelId, SettingSwearNotify, value)
 	err := mod.state.Save()
 	if err != Success {
 		return getResponseOnErr(err, mod.config)
 	}
-
 	if value == "on" {
 		return mod.config.OnSwearNotifyOnResponse
 	}
-
 	return mod.config.OnSwearNotifyOffResponse
 }
 
@@ -280,7 +255,6 @@ func fillUserRealNames(
 		log.Printf("ModSwears: Cannot fetch users from slack: %s\n", usersErr)
 		return config.OnUserFetchErr
 	}
-
 	for _, userStat := range userStats {
 		user, ok := getUserById(users, userStat.UserId)
 		if !ok {
@@ -289,7 +263,6 @@ func fillUserRealNames(
 			userStat.UserId = user.Name
 		}
 	}
-
 	return ""
 }
 
@@ -307,13 +280,16 @@ func formatAddRuleResponse(format string, rule string) string {
 	return utils.ParamFormat(format, params)
 }
 
-func formatSwearsResponse(lineFormat string, swearFormat string, swears []string) string {
+func formatSwearsResponse(
+	lineFormat string,
+	swearFormat string,
+	swears []string) string {
+
 	var buffer bytes.Buffer
 	for i, swear := range swears {
 		buffer.WriteString(formatSwear(swearFormat, swear, i+1))
 		buffer.WriteString(", ")
 	}
-
 	result := strings.Trim(buffer.String(), ", ")
 	params := map[string]string{"swears": result, "count": strconv.Itoa(len(swears))}
 	return utils.ParamFormat(lineFormat, params)
@@ -330,7 +306,11 @@ func formatMonthlyRank(
 	year int,
 	userStats []*UserStats) string {
 
-	header := formatMonthlyRankHeader(config.MonthlyRankHeaderFormat, config.MonthNames, month, year)
+	header := formatMonthlyRankHeader(
+		config.MonthlyRankHeaderFormat,
+		config.MonthNames,
+		month,
+		year)
 	rankLines := formatRankLines(config.RankLineFormat, userStats)
 	return fmt.Sprintf("%s\n%s", header, rankLines)
 }
@@ -344,7 +324,12 @@ func formatTotalRank(
 	return fmt.Sprintf("%s\n%s", header, rankLines)
 }
 
-func formatMonthlyRankHeader(headerFormat string, monthNames []string, month int, year int) string {
+func formatMonthlyRankHeader(
+	headerFormat string,
+	monthNames []string,
+	month int,
+	year int) string {
+
 	params := map[string]string{
 		"month":    monthNames[month-1],
 		"monthnum": strconv.Itoa(month),

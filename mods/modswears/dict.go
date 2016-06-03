@@ -23,9 +23,7 @@ func (mod *ModSwears) AddRule(rule string) int {
 		return DictFileReadErr
 	}
 	defer file.Close()
-
 	normRule := normalizeWord(rule)
-
 	confilctErr := mod.dict.AddEntry(normRule)
 	if confilctErr != nil {
 		log.Printf("ModSwears: add rule: %s\n", confilctErr.Desc)
@@ -35,13 +33,11 @@ func (mod *ModSwears) AddRule(rule string) int {
 
 		return AddRuleConflictErr
 	}
-
 	_, saveErr := file.WriteString(fmt.Sprintf("%s\n", normRule))
 	if saveErr != nil {
 		log.Printf("ModSwears: cannot write string '%s' to swear dictionary file: %v\n", normRule, saveErr)
 		return AddRuleSaveErr
 	}
-
 	return Success
 }
 
@@ -55,7 +51,6 @@ func (mod *ModSwears) FindSwears(message string) []string {
 			swears = append(swears, word)
 		}
 	}
-
 	return swears
 }
 
@@ -66,18 +61,15 @@ func (mod *ModSwears) LoadSwears() int {
 		return DictFileReadErr
 	}
 	defer file.Close()
-
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		word := normalizeWord(scanner.Text())
 		mod.dict.AddEntry(word)
 	}
-
 	if err := scanner.Err(); err != nil {
 		log.Printf("ModSwears: Error reading from swear dictionary file: %v\n", err)
 		return DictFileReadErr
 	}
-
 	return Success
 }
 

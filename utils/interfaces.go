@@ -9,12 +9,10 @@ func GetEmptyFieldNames(obj interface{}) []string {
 	result := []string{}
 	objVal := reflect.ValueOf(obj)
 	objType := objVal.Type()
-
 	for i := 0; i < objVal.NumField(); i++ {
 		fieldVal := objVal.Field(i)
 		fieldName := objType.Field(i).Name
 		kind := fieldVal.Kind()
-
 		if kind == reflect.Func ||
 			kind == reflect.Interface ||
 			kind == reflect.Ptr ||
@@ -37,6 +35,5 @@ func GetEmptyFieldNames(obj interface{}) []string {
 			}
 		}
 	}
-
 	return result
 }
