@@ -2,7 +2,6 @@ package settings
 
 import (
 	"../utils"
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -12,9 +11,13 @@ func TestReadEmptySettings(t *testing.T) {
 	fileName := createTmpSettingsPath(t)
 	defer os.Remove(fileName)
 
-	sw := createSettings(fileName)
-	expected := &AllSettings{UserSettings: make(map[string][]*UserSettings)}
-	assertReadSettings(t, sw, expected)
+	expected := &AllSettings{
+		UserSettings: map[string]*UserSettings{},
+		ChanSettings: map[string]*ChanSettings{},
+		Settings:     map[string]string{},
+	}
+
+	assertLoadSettings(t, fileName, expected)
 }
 
 func TestWriteReadSettings(t *testing.T) {
@@ -22,56 +25,98 @@ func TestWriteReadSettings(t *testing.T) {
 	defer os.Remove(fileName)
 
 	settings := &AllSettings{
-		UserSettings: map[string][]*UserSettings{
-			"user1": []*UserSettings{
-				&UserSettings{
-					UserId:   "user1",
-					Channel:  "#channel1",
-					Settings: map[string]string{"key": "value1"},
+		UserSettings: map[string]*UserSettings{
+			"user1": &UserSettings{
+				UserId: "user1",
+				ChanSettings: map[string]*ChanSettings{
+					"chan1": &ChanSettings{
+						ChannelId: "chan1",
+						Settings:  map[string]string{"key1": "val1", "key2": "val2"},
+					},
+					"chan2": &ChanSettings{
+						ChannelId: "chan2",
+						Settings:  map[string]string{},
+					},
 				},
-				&UserSettings{
-					UserId:   "user1",
-					Channel:  "#channel2",
-					Settings: map[string]string{"key": "value2"},
-				},
+				Settings: map[string]string{"key4": "val4", "key5": "val5"},
 			},
-			"user2": []*UserSettings{
-				&UserSettings{
-					UserId:   "user2",
-					Channel:  "#channel2",
-					Settings: map[string]string{"key": "value2"},
-				},
+			"user2": &UserSettings{
+				UserId:       "user2",
+				ChanSettings: map[string]*ChanSettings{},
+				Settings:     map[string]string{},
 			},
 		},
+		ChanSettings: map[string]*ChanSettings{
+			"chan1": &ChanSettings{
+				ChannelId: "chan1",
+				Settings:  map[string]string{"key6": "val6", "key7": "val7"},
+			},
+			"chan2": &ChanSettings{
+				ChannelId: "chan2",
+				Settings:  map[string]string{},
+			},
+		},
+		Settings: map[string]string{"key8": "val8", "key9": "val9"},
 	}
 
-	sw := createSettings(fileName)
-	assertWriteSettings(t, sw, settings)
-	assertReadSettings(t, sw, settings)
+	assertSaveSettings(t, fileName, settings)
+	assertLoadSettings(t, fileName, settings)
 }
 
 func TestSettingSettings(t *testing.T) {
-	s := &AllSettings{UserSettings: make(map[string][]*UserSettings)}
+	settings := createAllSettings()
+	settings.SetSetting("k1", "v1")
+	settings.SetSetting("k2", "v2")
+	settings.SetSetting("k1", "v1u")
 
-	s.SetSetting("u1", "c1", "key1", "value1")
-	s.SetSetting("u1", "c1", "key2", "value2")
-	s.SetSetting("u1", "c2", "key3", "value3")
-	s.SetSetting("u1", "c1", "key2", "value2-changed")
-	s.SetSetting("u2", "c1", "key4", "value4")
-
-	assertGetSetting(t, s, "u1", "c1", "key1", "value1")
-	assertGetSetting(t, s, "u1", "c1", "key2", "value2-changed")
-	assertGetSetting(t, s, "u1", "c2", "key3", "value3")
-	assertGetSetting(t, s, "u2", "c1", "key4", "value4")
-	assertNotGetString(t, s, "u1", "c1", "key3")
-	assertNotGetString(t, s, "u1", "c1", "key4")
+	assertGetSetting(t, settings, "k1", "v1u")
+	assertGetSetting(t, settings, "k2", "v2")
+	assertNotGetSetting(t, settings, "k3")
 }
 
-func createSettings(tmpFilePath string) *Swears {
-	config := SwearsConfig{
-		SettingsFileName: tmpFilePath,
-	}
-	return NewSwears(nil, config)
+func TestSettingUserSettings(t *testing.T) {
+	settings := createAllSettings()
+	settings.SetUserSetting("u1", "k1", "u1v1")
+	settings.SetUserSetting("u1", "k2", "u1v2")
+	settings.SetUserSetting("u1", "k1", "u1v1u")
+	settings.SetUserSetting("u2", "k1", "u2v1")
+
+	assertGetUserSetting(t, settings, "u1", "k1", "u1v1u")
+	assertGetUserSetting(t, settings, "u1", "k2", "u1v2")
+	assertGetUserSetting(t, settings, "u2", "k1", "u2v1")
+	assertNotGetUserSetting(t, settings, "u2", "k2")
+	assertNotGetUserSetting(t, settings, "u3", "k1")
+}
+
+func TestSettingChanSettings(t *testing.T) {
+	settings := createAllSettings()
+	settings.SetChanSetting("c1", "k1", "c1v1")
+	settings.SetChanSetting("c1", "k2", "c1v2")
+	settings.SetChanSetting("c1", "k1", "c1v1u")
+	settings.SetChanSetting("c2", "k1", "c2v1")
+
+	assertGetChanSetting(t, settings, "c1", "k1", "c1v1u")
+	assertGetChanSetting(t, settings, "c1", "k2", "c1v2")
+	assertGetChanSetting(t, settings, "c2", "k1", "c2v1")
+	assertNotGetChanSetting(t, settings, "c2", "k2")
+	assertNotGetChanSetting(t, settings, "c3", "k1")
+}
+
+func TestSettingUserChanSettings(t *testing.T) {
+	settings := createAllSettings()
+	settings.SetUserChanSetting("u1", "c1", "k1", "u1c1v1")
+	settings.SetUserChanSetting("u1", "c1", "k2", "u1c1v2")
+	settings.SetUserChanSetting("u1", "c1", "k1", "u1c1v1u")
+	settings.SetUserChanSetting("u1", "c2", "k1", "u1c2v1")
+	settings.SetUserChanSetting("u2", "c1", "k1", "u2c1v1")
+
+	assertGetUserChanSetting(t, settings, "u1", "c1", "k1", "u1c1v1u")
+	assertGetUserChanSetting(t, settings, "u1", "c1", "k2", "u1c1v2")
+	assertGetUserChanSetting(t, settings, "u1", "c2", "k1", "u1c2v1")
+	assertGetUserChanSetting(t, settings, "u2", "c1", "k1", "u2c1v1")
+	assertNotGetUserChanSetting(t, settings, "u1", "c2", "k2")
+	assertNotGetUserChanSetting(t, settings, "u2", "c1", "k2")
+	assertNotGetUserChanSetting(t, settings, "u3", "c1", "k1")
 }
 
 func createTmpSettingsPath(t *testing.T) string {
@@ -82,17 +127,17 @@ func createTmpSettingsPath(t *testing.T) string {
 	return fileName
 }
 
-func assertReadSettings(t *testing.T, sw *Swears, expected *AllSettings) {
-	settings, err := readSettings(sw.config.SettingsFileName)
+func assertLoadSettings(t *testing.T, fileName string, expected *AllSettings) {
+	actual, err := LoadSettings(fileName)
 	if err != Success {
 		t.Fatalf("Expected no errors when reading settings, got %v", err)
-	} else if !reflect.DeepEqual(settings, expected) {
-		t.Fatalf("Settings deep equal failed. Expected %#v, got %#v", expected, settings)
+	} else if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("Settings deep equal failed.")
 	}
 }
 
-func assertWriteSettings(t *testing.T, sw *Swears, settings *AllSettings) {
-	err := writeSettings(sw.config.SettingsFileName, settings)
+func assertSaveSettings(t *testing.T, fileName string, settings *AllSettings) {
+	err := SaveSettings(fileName, settings)
 	if err != Success {
 		t.Fatalf("Expected no errors when writing settings, got %v", err)
 	}
@@ -101,43 +146,140 @@ func assertWriteSettings(t *testing.T, sw *Swears, settings *AllSettings) {
 func assertGetSetting(
 	t *testing.T,
 	settings *AllSettings,
-	userId string,
-	channel string,
 	key string,
 	expected string) {
 
-	value, ok := settings.GetSetting(userId, channel, key)
-	if !ok || value != expected {
-		if !ok {
-			value = "nothing"
-		} else {
-			value = fmt.Sprintf("'%s'", value)
-		}
-
-		t.Fatalf(
-			"Expected value '%s' for userId='%s', channel='%s', key='%s', got %s.",
-			expected,
-			userId,
-			channel,
-			key,
-			value)
+	actual, ok := settings.GetSetting(key)
+	if !ok {
+		t.Fatalf("No setting key '%v' found", key)
+	}
+	if actual != expected {
+		t.Fatalf("Setting key '%v': expected value '%v', got '%v'", key, expected, actual)
 	}
 }
 
-func assertNotGetString(
+func assertNotGetSetting(
+	t *testing.T,
+	settings *AllSettings,
+	key string) {
+
+	actual, ok := settings.GetSetting(key)
+	if ok {
+		t.Fatalf("Setting key '%v': expected no setting value, got '%v'", key, actual)
+	}
+}
+
+func assertGetUserSetting(
 	t *testing.T,
 	settings *AllSettings,
 	userId string,
-	channel string,
+	key string,
+	expected string) {
+
+	actual, ok := settings.GetUserSetting(userId, key)
+	if !ok {
+		t.Fatalf("No user '%v' setting key '%v' found", userId, key)
+	}
+	if actual != expected {
+		t.Fatalf(
+			"User '%v' setting key '%v': expected value '%v', got '%v'",
+			userId,
+			key,
+			expected,
+			actual)
+	}
+}
+
+func assertNotGetUserSetting(
+	t *testing.T,
+	settings *AllSettings,
+	userId string,
 	key string) {
 
-	value, ok := settings.GetSetting(userId, channel, key)
+	actual, ok := settings.GetUserSetting(userId, key)
 	if ok {
 		t.Fatalf(
-			"Expected no value for userId='%s', channel='%s', key='%s', got '%s'.",
+			"User '%v' setting key '%v': expected no setting value, got '%v'",
 			userId,
-			channel,
 			key,
-			value)
+			actual)
+	}
+}
+
+func assertGetChanSetting(
+	t *testing.T,
+	settings *AllSettings,
+	channelId string,
+	key string,
+	expected string) {
+
+	actual, ok := settings.GetChanSetting(channelId, key)
+	if !ok {
+		t.Fatalf("No channel '%v' setting key '%v' found", channelId, key)
+	}
+	if actual != expected {
+		t.Fatalf(
+			"Channel '%v' setting key '%v': expected value '%v', got '%v'",
+			channelId,
+			key,
+			expected,
+			actual)
+	}
+}
+
+func assertNotGetChanSetting(
+	t *testing.T,
+	settings *AllSettings,
+	channelId string,
+	key string) {
+
+	actual, ok := settings.GetChanSetting(channelId, key)
+	if ok {
+		t.Fatalf(
+			"Channel '%v' setting key '%v': expected no setting value, got '%v'",
+			channelId,
+			key,
+			actual)
+	}
+}
+
+func assertGetUserChanSetting(
+	t *testing.T,
+	settings *AllSettings,
+	userId string,
+	channelId string,
+	key string,
+	expected string) {
+
+	actual, ok := settings.GetUserChanSetting(userId, channelId, key)
+	if !ok {
+		t.Fatalf("No user '%v' channel '%v' setting key '%v' found", userId, channelId, key)
+	}
+	if actual != expected {
+		t.Fatalf(
+			"User '%v' channel '%v' setting key '%v': expected value '%v', got '%v'",
+			userId,
+			channelId,
+			key,
+			expected,
+			actual)
+	}
+}
+
+func assertNotGetUserChanSetting(
+	t *testing.T,
+	settings *AllSettings,
+	userId string,
+	channelId string,
+	key string) {
+
+	actual, ok := settings.GetUserChanSetting(userId, channelId, key)
+	if ok {
+		t.Fatalf(
+			"User '%v' channel '%v' setting key '%v': expected no setting value, got '%v'",
+			userId,
+			channelId,
+			key,
+			actual)
 	}
 }

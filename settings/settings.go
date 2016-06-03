@@ -17,59 +17,121 @@ const (
 )
 
 type AllSettings struct {
-	UserSettings map[string][]*UserSettings
+	UserSettings map[string]*UserSettings
+	ChanSettings map[string]*ChanSettings
+	Settings     map[string]string
 }
 
 type UserSettings struct {
-	UserId   string
-	Channel  string
-	Settings map[string]string
+	UserId       string
+	ChanSettings map[string]*ChanSettings
+	Settings     map[string]string
 }
 
-func (settings *AllSettings) GetSetting(
+type ChanSettings struct {
+	ChannelId string
+	Settings  map[string]string
+}
+
+func (settings *AllSettings) GetUserChanSetting(
 	userId string,
-	channel string,
+	channelId string,
 	key string) (string, bool) {
 
-	userSettings, ok := settings.UserSettings[userId]
-	if ok {
-		for _, userSetting := range userSettings {
-			if userSetting.Channel == channel {
-				value, ok := userSetting.Settings[key]
-				return value, ok
-			}
+	userSettings, userOk := settings.UserSettings[userId]
+	if userOk {
+		chanSettings, chanOk := userSettings.ChanSettings[channelId]
+		if chanOk {
+			value, ok := chanSettings.Settings[key]
+			return value, ok
 		}
 	}
 
 	return "", false
 }
 
-func (settings *AllSettings) SetSetting(
+func (settings *AllSettings) GetUserSetting(
 	userId string,
-	channel string,
+	key string) (string, bool) {
+
+	userSettings, userOk := settings.UserSettings[userId]
+	if userOk {
+		value, ok := userSettings.Settings[key]
+		return value, ok
+	}
+
+	return "", false
+}
+
+func (settings *AllSettings) GetChanSetting(
+	channelId string,
+	key string) (string, bool) {
+
+	chanSettings, chanOk := settings.ChanSettings[channelId]
+	if chanOk {
+		value, ok := chanSettings.Settings[key]
+		return value, ok
+	}
+
+	return "", false
+}
+
+func (settings *AllSettings) GetSetting(key string) (string, bool) {
+	value, ok := settings.Settings[key]
+	return value, ok
+}
+
+func (settings *AllSettings) SetUserChanSetting(
+	userId string,
+	channelId string,
 	key string,
 	value string) {
 
-	userSettings, ok := settings.UserSettings[userId]
-	if !ok {
-		userSettings = []*UserSettings{}
+	userSettings, userOk := settings.UserSettings[userId]
+	if !userOk {
+		userSettings = createUserSettings(userId)
+		settings.UserSettings[userId] = userSettings
 	}
 
-	for _, userSetting := range userSettings {
-		if userSetting.Channel == channel {
-			userSetting.Settings[key] = value
-			return
-		}
+	chanSettings, chanOk := userSettings.ChanSettings[channelId]
+	if !chanOk {
+		chanSettings = createChanSettings(channelId)
+		userSettings.ChanSettings[channelId] = chanSettings
 	}
 
-	userSetting := &UserSettings{
-		UserId:   userId,
-		Channel:  channel,
-		Settings: map[string]string{key: value},
+	chanSettings.Settings[key] = value
+}
+
+func (settings *AllSettings) SetUserSetting(
+	userId string,
+	key string,
+	value string) {
+
+	userSettings, userOk := settings.UserSettings[userId]
+	if !userOk {
+		userSettings = createUserSettings(userId)
+		settings.UserSettings[userId] = userSettings
 	}
 
-	userSettings = append(userSettings, userSetting)
-	settings.UserSettings[userId] = userSettings
+	userSettings.Settings[key] = value
+}
+
+func (settings *AllSettings) SetChanSetting(
+	channelId string,
+	key string,
+	value string) {
+
+	chanSettings, chanOk := settings.ChanSettings[channelId]
+	if !chanOk {
+		chanSettings = createChanSettings(channelId)
+		settings.ChanSettings[channelId] = chanSettings
+	}
+
+	chanSettings.Settings[key] = value
+}
+
+func (settings *AllSettings) SetSetting(key string, value string) {
+	settings.Settings[key] = value
 }
 
 func LoadSettings(fileName string) (*AllSettings, int) {
@@ -113,11 +175,31 @@ func SaveSettings(fileName string, settings *AllSettings) int {
 
 func createSettingsFileIfNotExist(fileName string) int {
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
-		settings := &AllSettings{
-			UserSettings: make(map[string][]*UserSettings),
-		}
-		return SaveSettings(fileName, settings)
+		return SaveSettings(fileName, createAllSettings())
 	}
 
 	return Success
+}
+
+func createAllSettings() *AllSettings {
+	return &AllSettings{
+		UserSettings: map[string]*UserSettings{},
+		ChanSettings: map[string]*ChanSettings{},
+		Settings:     map[string]string{},
+	}
+}
+
+func createUserSettings(userId string) *UserSettings {
+	return &UserSettings{
+		UserId:       userId,
+		ChanSettings: map[string]*ChanSettings{},
+		Settings:     map[string]string{},
+	}
+}
+
+func createChanSettings(channelId string) *ChanSettings {
+	return &ChanSettings{
+		ChannelId: channelId,
+		Settings:  map[string]string{},
+	}
 }

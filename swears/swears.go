@@ -132,7 +132,7 @@ func (sw *Swears) Init() bool {
 	return true
 }
 
-func (sw *Swears) ProcessMention(message string, userId string, channel string) string {
+func (sw *Swears) ProcessMention(message string, userId string, channelId string) string {
 	if sw.currMonthRankRegex.MatchString(message) {
 		return sw.getCurrMonthRank()
 	}
@@ -151,17 +151,17 @@ func (sw *Swears) ProcessMention(message string, userId string, channel string) 
 	}
 
 	if sw.swearNotifyOnRegex.MatchString(message) {
-		return sw.setSwearNotify(userId, channel, "on")
+		return sw.setSwearNotify(userId, channelId, "on")
 	}
 
 	if sw.swearNotifyOffRegex.MatchString(message) {
-		return sw.setSwearNotify(userId, channel, "off")
+		return sw.setSwearNotify(userId, channelId, "off")
 	}
 
 	return sw.config.OnUnknownCommandResponse
 }
 
-func (sw *Swears) ProcessMessage(message string, userId string, channel string) string {
+func (sw *Swears) ProcessMessage(message string, userId string, channelId string) string {
 	swears := sw.FindSwears(message)
 
 	if len(swears) > 0 {
@@ -171,7 +171,7 @@ func (sw *Swears) ProcessMessage(message string, userId string, channel string) 
 			return getResponseOnErr(err, sw.config)
 		}
 
-		swearNotify, exist := sw.settings.GetSetting(userId, channel, "SwearNotify")
+		swearNotify, exist := sw.settings.GetUserChanSetting(userId, channelId, "SwearNotify")
 		if exist && swearNotify == "on" {
 			return formatSwearsResponse(
 				sw.config.OnSwearsFoundResponse,
@@ -240,8 +240,8 @@ func (sw *Swears) addRule(rule string) string {
 	return formatAddRuleResponse(sw.config.OnAddRuleResponse, rule)
 }
 
-func (sw *Swears) setSwearNotify(userId string, channel string, value string) string {
-	sw.settings.SetSetting(userId, channel, "SwearNotify", value)
+func (sw *Swears) setSwearNotify(userId string, channelId string, value string) string {
+	sw.settings.SetUserChanSetting(userId, channelId, "SwearNotify", value)
 	err := settings.SaveSettings(sw.config.SettingsFileName, sw.settings)
 	if err != Success {
 		return getResponseOnErr(err, sw.config)
