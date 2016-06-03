@@ -1,7 +1,6 @@
 package modswears
 
 import (
-	"../../mods"
 	"../../utils"
 	"strings"
 	"testing"
@@ -9,7 +8,7 @@ import (
 
 func TestConfigIntegrity(t *testing.T) {
 	var config ModSwearsConfig
-	err := mods.LoadConfig("../../modswears-config-rename.json", &config)
+	err := utils.LoadJson("../../modswears-config-rename.json", &config)
 	if err != nil {
 		t.Fatalf("Loading config failed %v", err)
 	}

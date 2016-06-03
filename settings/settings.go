@@ -33,6 +33,14 @@ type ChanSettings struct {
 	Settings  map[string]string
 }
 
+func NewSettings() *AllSettings {
+	return &AllSettings{
+		UserSettings: map[string]*UserSettings{},
+		ChanSettings: map[string]*ChanSettings{},
+		Settings:     map[string]string{},
+	}
+}
+
 func (settings *AllSettings) GetUserChanSetting(
 	userId string,
 	channelId string,
@@ -175,18 +183,10 @@ func SaveSettings(fileName string, settings *AllSettings) int {
 
 func createSettingsFileIfNotExist(fileName string) int {
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
-		return SaveSettings(fileName, createAllSettings())
+		return SaveSettings(fileName, NewSettings())
 	}
 
 	return Success
-}
-
-func createAllSettings() *AllSettings {
-	return &AllSettings{
-		UserSettings: map[string]*UserSettings{},
-		ChanSettings: map[string]*ChanSettings{},
-		Settings:     map[string]string{},
-	}
 }
 
 func createUserSettings(userId string) *UserSettings {

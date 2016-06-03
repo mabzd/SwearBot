@@ -64,7 +64,7 @@ func TestWriteReadSettings(t *testing.T) {
 }
 
 func TestSettingSettings(t *testing.T) {
-	settings := createAllSettings()
+	settings := NewSettings()
 	settings.SetSetting("k1", "v1")
 	settings.SetSetting("k2", "v2")
 	settings.SetSetting("k1", "v1u")
@@ -75,7 +75,7 @@ func TestSettingSettings(t *testing.T) {
 }
 
 func TestSettingUserSettings(t *testing.T) {
-	settings := createAllSettings()
+	settings := NewSettings()
 	settings.SetUserSetting("u1", "k1", "u1v1")
 	settings.SetUserSetting("u1", "k2", "u1v2")
 	settings.SetUserSetting("u1", "k1", "u1v1u")
@@ -89,7 +89,7 @@ func TestSettingUserSettings(t *testing.T) {
 }
 
 func TestSettingChanSettings(t *testing.T) {
-	settings := createAllSettings()
+	settings := NewSettings()
 	settings.SetChanSetting("c1", "k1", "c1v1")
 	settings.SetChanSetting("c1", "k2", "c1v2")
 	settings.SetChanSetting("c1", "k1", "c1v1u")
@@ -103,7 +103,7 @@ func TestSettingChanSettings(t *testing.T) {
 }
 
 func TestSettingUserChanSettings(t *testing.T) {
-	settings := createAllSettings()
+	settings := NewSettings()
 	settings.SetUserChanSetting("u1", "c1", "k1", "u1c1v1")
 	settings.SetUserChanSetting("u1", "c1", "k2", "u1c1v2")
 	settings.SetUserChanSetting("u1", "c1", "k1", "u1c1v1u")

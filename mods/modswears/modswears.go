@@ -99,7 +99,7 @@ func (mod *ModSwears) Init(state *mods.ModState) bool {
 	mod.statsFileName = mods.GetPath(mod, StatsFileName)
 	configFileName := mods.GetPath(mod, ConfigFileName)
 
-	err = mods.LoadConfig(configFileName, mod.config)
+	err = utils.LoadJson(configFileName, mod.config)
 	if err != nil {
 		log.Println("ModSwears: cannot load config.")
 		return false

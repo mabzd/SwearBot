@@ -11,6 +11,10 @@ import (
 
 var botMentionRegex *regexp.Regexp = nil
 
+func registerMods() {
+
+}
+
 func Run(token string) {
 	var connected bool = false
 
@@ -18,15 +22,18 @@ func Run(token string) {
 	slackClient.SetDebug(false)
 	rtm := slackClient.NewRTM()
 
-	modState := mods.NewModState(slackClient)
-	if modState == nil {
-		log.Fatal("Initializing bot modules failed")
+	modContainer := mods.NewModContainer()
+
+	if !modContainer.LoadConfig() {
+		log.Println("Loading mod config failed.")
+		return
 	}
 
-	swears := modswears.NewModSwears()
+	modContainer.AddMod(modswears.NewModSwears())
 
-	if !swears.Init(modState) {
-		log.Fatal("Initializing swears module failed")
+	if !modContainer.InitMods(slackClient) {
+		log.Println("Initializing mods failed.")
+		return
 	}
 
 	go rtm.ManageConnection()
@@ -50,9 +57,9 @@ func Run(token string) {
 
 					if isMention(message) {
 						message = removeMentions(message)
-						response = swears.ProcessMention(message, userId, channel)
+						response = modContainer.ProcessMention(message, userId, channel)
 					} else {
-						response = swears.ProcessMessage(message, userId, channel)
+						response = modContainer.ProcessMessage(message, userId, channel)
 					}
 
 					respond(rtm, response, channel)

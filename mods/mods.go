@@ -1,18 +1,19 @@
 package mods
 
 import (
-	"../settings"
-	"encoding/json"
+	"../utils"
 	"github.com/nlopes/slack"
-	"io/ioutil"
 	"log"
 	"path"
+	"sort"
+	"strings"
 )
 
 const (
-	Success          = 0
-	ModsDirName      = "mods"
-	SettingsFileName = "settings.json"
+	Success           = 0
+	ModsDirName       = "mods"
+	SettingsFileName  = "settings.json"
+	ModConfigFileName = "config.json"
 )
 
 type Mod interface {
@@ -22,89 +23,148 @@ type Mod interface {
 	ProcessMessage(message string, userId string, channelId string) string
 }
 
-type ModState struct {
-	settings    *settings.AllSettings
-	SlackClient *slack.Client
+type ModInfo struct {
+	Name     string
+	Enabled  bool
+	Priority int
+	Instance Mod
 }
 
-func NewModState(slackClient *slack.Client) *ModState {
-	filePath := getSettingsFilePath()
-	settings, err := settings.LoadSettings(filePath)
-	if err != Success {
-		return nil
+type ModContainer struct {
+	init     bool
+	modInfos []*ModInfo
+}
+
+type ByModPriority []*ModInfo
+
+func (a ByModPriority) Len() int {
+	return len(a)
+}
+
+func (a ByModPriority) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+
+func (a ByModPriority) Less(i, j int) bool {
+	return a[i].Priority > a[j].Priority
+}
+
+func NewModContainer() *ModContainer {
+	return &ModContainer{
+		modInfos: []*ModInfo{},
 	}
-	return &ModState{
-		settings:    settings,
-		SlackClient: slackClient,
-	}
 }
 
-func (s *ModState) GetUserChanSetting(
-	userId string,
-	channelId string,
-	key string) (string, bool) {
-
-	return s.settings.GetUserChanSetting(userId, channelId, key)
-}
-
-func (s *ModState) GetUserSetting(userId string, key string) (string, bool) {
-	return s.settings.GetUserSetting(userId, key)
-}
-
-func (s *ModState) GetChanSetting(channelId string, key string) (string, bool) {
-	return s.settings.GetChanSetting(channelId, key)
-}
-
-func (s *ModState) GetSetting(key string) (string, bool) {
-	return s.settings.GetSetting(key)
-}
-
-func (s *ModState) SetUserChanSetting(
-	userId string,
-	channelId string,
-	key string,
-	value string) {
-
-	s.settings.SetUserChanSetting(userId, channelId, key, value)
-}
-
-func (s *ModState) SetUserSetting(userId string, key string, value string) {
-	s.settings.SetUserSetting(userId, key, value)
-}
-
-func (s *ModState) SetChanSetting(channelId string, key string, value string) {
-	s.settings.SetChanSetting(channelId, key, value)
-}
-
-func (s *ModState) SetSetting(key string, value string) {
-	s.settings.SetSetting(key, value)
-}
-
-func (s *ModState) Save() int {
-	filePath := getSettingsFilePath()
-	return settings.SaveSettings(filePath, s.settings)
-}
-
-func LoadConfig(fileName string, config interface{}) error {
-	bytes, err := ioutil.ReadFile(fileName)
+func (mc *ModContainer) LoadConfig() bool {
+	filePath := getModConfigFilePath()
+	err := utils.LoadJson(filePath, &mc.modInfos)
 	if err != nil {
-		log.Printf("Cannot read config from file '%s': %s", fileName, err)
-		return err
+		log.Println("ModContainer: cannot load mod config file.")
+		return false
+	}
+	return true
+}
+
+func (mc *ModContainer) AddMod(mod Mod) bool {
+	modName := mod.Name()
+	modInfo := getModInfoByName(mc.modInfos, modName)
+	if modInfo == nil {
+		log.Printf("ModContainer: no mod '%s' in mod config file.\n", modName)
+		return false
+	}
+	if modInfo.Instance != nil {
+		log.Printf("ModContainer: mod '%s' already added.\n", modName)
+		return false
+	}
+	modInfo.Instance = mod
+	return true
+}
+
+func (mc *ModContainer) InitMods(slackClient *slack.Client) bool {
+	modState := newModState(slackClient)
+	if !modState.init() {
+		log.Println("ModContainer: mod state failed to initialize")
+		return false
 	}
 
-	err = json.Unmarshal(bytes, config)
-	if err != nil {
-		log.Printf("Error when parsing config file '%s' JSON: %s", fileName, err)
-		return err
+	modsRegistered := []string{}
+	modsEnabled := []string{}
+	modsInitialized := []string{}
+
+	for _, modInfo := range mc.modInfos {
+		if modInfo.Instance != nil {
+			modsRegistered = append(modsRegistered, modInfo.Name)
+			if modInfo.Enabled {
+				modsEnabled = append(modsEnabled, modInfo.Name)
+				if modInfo.Instance.Init(modState) {
+					modsInitialized = append(modsInitialized, modInfo.Name)
+				} else {
+					log.Printf("ModContainer: mod '%s' failed to initialize\n", modInfo.Name)
+				}
+			}
+		}
 	}
 
-	return nil
+	sort.Sort(ByModPriority(mc.modInfos))
+
+	log.Printf("ModContainer: mod initialization complete "+
+		"(mods active: %d, mods enabled: %d, mods registered: %d)\n",
+		len(modsInitialized), len(modsEnabled), len(modsRegistered))
+
+	if len(modsInitialized) == 0 {
+		log.Println("ModContainer: no active mods")
+		return false
+	}
+
+	log.Printf("ModContainer: active mods: %s\n", strings.Join(modsInitialized, ", "))
+	return true
+}
+
+func (mc *ModContainer) ProcessMention(
+	message string,
+	userId string,
+	channelId string) string {
+
+	return mc.executeOnActiveMod(func(mod Mod) string {
+		return mod.ProcessMention(message, userId, channelId)
+	})
+}
+
+func (mc *ModContainer) ProcessMessage(
+	message string,
+	userId string,
+	channelId string) string {
+
+	return mc.executeOnActiveMod(func(mod Mod) string {
+		return mod.ProcessMessage(message, userId, channelId)
+	})
 }
 
 func GetPath(mod Mod, fileName string) string {
 	return path.Join(ModsDirName, mod.Name(), fileName)
 }
 
-func getSettingsFilePath() string {
-	return path.Join(ModsDirName, SettingsFileName)
+func (mc *ModContainer) executeOnActiveMod(action func(Mod) string) string {
+	for _, modInfo := range mc.modInfos {
+		if modInfo.Instance != nil && modInfo.Enabled {
+			response := action(modInfo.Instance)
+			if response != "" {
+				return response
+			}
+		}
+	}
+	return ""
+}
+
+func getModInfoByName(modInfos []*ModInfo, name string) *ModInfo {
+	for _, modInfo := range modInfos {
+		if modInfo.Name == name {
+			return modInfo
+		}
+	}
+	return nil
+}
+
+func getModConfigFilePath() string {
+	return path.Join(ModsDirName, ModConfigFileName)
 }
