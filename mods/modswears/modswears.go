@@ -68,14 +68,10 @@ type ModSwearsConfig struct {
 
 	OnStatsFileCreateErr string
 	OnStatsFileReadErr   string
-	OnStatsUnmarshalErr  string
-	OnStatsMarshalErr    string
 	OnStatsSaveErr       string
 
 	OnSettingsFileCreateErr string
 	OnSettingsFileReadErr   string
-	OnSettingsUnmarshalErr  string
-	OnSettingsMarshalErr    string
 	OnSettingsSaveErr       string
 }
 
@@ -392,20 +388,12 @@ func getResponseOnErr(err int, config *ModSwearsConfig) string {
 		return config.OnStatsFileCreateErr
 	case StatsFileReadErr:
 		return config.OnStatsFileReadErr
-	case StatsUnmarshalErr:
-		return config.OnStatsUnmarshalErr
-	case StatsMarshalErr:
-		return config.OnStatsMarshalErr
 	case StatsSaveErr:
 		return config.OnStatsSaveErr
 	case settings.SettingsFileCreateErr:
 		return config.OnSettingsFileCreateErr
 	case settings.SettingsFileReadErr:
 		return config.OnSettingsFileReadErr
-	case settings.SettingsUnmarshalErr:
-		return config.OnSettingsUnmarshalErr
-	case settings.SettingsMarshalErr:
-		return config.OnSettingsMarshalErr
 	case settings.SettingsSaveErr:
 		return config.OnSettingsSaveErr
 	default:

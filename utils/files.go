@@ -23,13 +23,29 @@ func CreateTmpFileName(filePrefix string) string {
 func LoadJson(fileName string, in interface{}) error {
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		log.Printf("Cannot read JSON from file '%s': %s", fileName, err)
+		log.Printf("Cannot read JSON from file '%s': %v\n", fileName, err)
 		return err
 	}
 
 	err = json.Unmarshal(bytes, in)
 	if err != nil {
-		log.Printf("Error when parsing JSON from file '%s': %s", fileName, err)
+		log.Printf("Error when parsing JSON from file '%s': %v\n", fileName, err)
+		return err
+	}
+
+	return nil
+}
+
+func SaveJson(fileName string, in interface{}) error {
+	bytes, err := json.Marshal(in)
+	if err != nil {
+		log.Printf("Error when marshaling JSON to file '%s': %v\n", fileName, err)
+		return err
+	}
+
+	err = ioutil.WriteFile(fileName, bytes, 0666)
+	if err != nil {
+		log.Printf("Cannot write JSON to file '%s': %v\n", fileName, err)
 		return err
 	}
 

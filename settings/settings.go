@@ -1,8 +1,7 @@
 package settings
 
 import (
-	"encoding/json"
-	"io/ioutil"
+	"../utils"
 	"log"
 	"os"
 )
@@ -11,9 +10,7 @@ const (
 	Success               = 0
 	SettingsFileCreateErr = 31
 	SettingsFileReadErr   = 32
-	SettingsUnmarshalErr  = 33
-	SettingsMarshalErr    = 34
-	SettingsSaveErr       = 35
+	SettingsSaveErr       = 33
 )
 
 type AllSettings struct {
@@ -148,36 +145,21 @@ func LoadSettings(fileName string) (*AllSettings, int) {
 		log.Println("Settings: Settings file creation failed.")
 		return nil, SettingsFileCreateErr
 	}
-
-	bytes, fileReadErr := ioutil.ReadFile(fileName)
-	if fileReadErr != nil {
-		log.Printf("Settings: Cannot read settings from file '%s': %s\n", fileName, fileReadErr)
+	var settings AllSettings
+	err := utils.LoadJson(fileName, &settings)
+	if err != nil {
+		log.Printf("Settings: Cannot read settings from file '%s'\n", fileName)
 		return nil, SettingsFileReadErr
 	}
-
-	var settings AllSettings
-	unmarshalErr := json.Unmarshal(bytes, &settings)
-	if unmarshalErr != nil {
-		log.Printf("Settings: Error when unmarshaling settings from JSON: %s\n", unmarshalErr)
-		return nil, SettingsUnmarshalErr
-	}
-
 	return &settings, Success
 }
 
 func SaveSettings(fileName string, settings *AllSettings) int {
-	bytes, marshalErr := json.Marshal(settings)
-	if marshalErr != nil {
-		log.Printf("Settings: Error when marshaling settings to JSON: %s\n", marshalErr)
-		return SettingsMarshalErr
-	}
-
-	saveErr := ioutil.WriteFile(fileName, bytes, 0666)
-	if saveErr != nil {
-		log.Printf("Settings: Cannot write settings to file '%s': %s\n", fileName, saveErr)
+	err := utils.SaveJson(fileName, settings)
+	if err != nil {
+		log.Printf("Settings: Cannot write settings to file '%s'\n", fileName)
 		return SettingsSaveErr
 	}
-
 	return Success
 }
 
@@ -185,7 +167,6 @@ func createSettingsFileIfNotExist(fileName string) int {
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		return SaveSettings(fileName, NewSettings())
 	}
-
 	return Success
 }
 

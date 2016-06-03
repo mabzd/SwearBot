@@ -25,13 +25,9 @@
 	"OnInvalidWildcardErr": "Invalid wildcard placement!",
 	"OnStatsFileCreateErr": "Error when creating stats file!",
 	"OnStatsFileReadErr": "Error when reading stats file!",
-	"OnStatsUnmarshalErr": "Error when getting stats from JSON!",
-	"OnStatsMarshalErr": "Error when putting stats to JSON!",
 	"OnStatsSaveErr": "Error when saving to stats file!",
 	"OnSettingsFileCreateErr": "Error when creating settings file!",
 	"OnSettingsFileReadErr": "Error when reading settings file!",
-	"OnSettingsUnmarshalErr": "Error when getting settings from JSON!",
-	"OnSettingsMarshalErr": "Error when putting settings to JSON!",
 	"OnSettingsSaveErr": "Error when saving to settings file!"
 }
 
