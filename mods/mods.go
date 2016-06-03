@@ -28,7 +28,8 @@ type ModState struct {
 }
 
 func NewModState(slackClient *slack.Client) *ModState {
-	settings, err := settings.LoadSettings(SettingsFileName)
+	filePath := getSettingsFilePath()
+	settings, err := settings.LoadSettings(filePath)
 	if err != Success {
 		return nil
 	}
@@ -80,7 +81,8 @@ func (s *ModState) SetSetting(key string, value string) {
 }
 
 func (s *ModState) Save() int {
-	return settings.SaveSettings(SettingsFileName, s.settings)
+	filePath := getSettingsFilePath()
+	return settings.SaveSettings(filePath, s.settings)
 }
 
 func LoadConfig(fileName string, config interface{}) error {
@@ -101,4 +103,8 @@ func LoadConfig(fileName string, config interface{}) error {
 
 func GetPath(mod Mod, fileName string) string {
 	return path.Join(ModsDirName, mod.Name(), fileName)
+}
+
+func getSettingsFilePath() string {
+	return path.Join(ModsDirName, SettingsFileName)
 }
