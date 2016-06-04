@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"runtime/debug"
 	"sort"
 	"strings"
 )
@@ -120,6 +121,7 @@ func (mc *ModContainer) ProcessMention(
 	channelId string) string {
 
 	return mc.executeOnActiveMod(func(mod Mod) string {
+		defer recoverMod("ProcessMention", mod.Name(), message, userId, channelId)
 		return mod.ProcessMention(message, userId, channelId)
 	})
 }
@@ -130,6 +132,7 @@ func (mc *ModContainer) ProcessMessage(
 	channelId string) string {
 
 	return mc.executeOnActiveMod(func(mod Mod) string {
+		defer recoverMod("ProcessMessage", mod.Name(), message, userId, channelId)
 		return mod.ProcessMessage(message, userId, channelId)
 	})
 }
@@ -152,6 +155,26 @@ func (mc *ModContainer) executeOnActiveMod(action func(Mod) string) string {
 		}
 	}
 	return ""
+}
+
+func recoverMod(
+	function string,
+	modName string,
+	message string,
+	userId string,
+	channelId string) {
+
+	if r := recover(); r != nil {
+		log.Printf(
+			"ModContainer: recovered panicking mod '%s' on call to %s('%s', '%s', '%s'): %s\n",
+			modName,
+			function,
+			message,
+			userId,
+			channelId,
+			r)
+		log.Printf("Stacktrace: %s", string(debug.Stack()))
+	}
 }
 
 func getModInfoByName(modInfos []*ModInfo, name string) *ModInfo {
