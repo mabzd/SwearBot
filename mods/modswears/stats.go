@@ -9,9 +9,8 @@ import (
 )
 
 const (
-	StatsFileCreateErr = 11
-	StatsFileReadErr   = 12
-	StatsSaveErr       = 13
+	StatsFileReadErr = 11
+	StatsSaveErr     = 12
 )
 
 type AllStats struct {
@@ -79,22 +78,17 @@ func createStatsFileIfNotExist(fileName string) int {
 }
 
 func readStats(fileName string) (*AllStats, int) {
-	createErr := createStatsFileIfNotExist(fileName)
-	if createErr != Success {
-		log.Println("ModSwears: Stats file creation failed.")
-		return nil, StatsFileCreateErr
-	}
-	var stats AllStats
-	err := utils.LoadJson(fileName, &stats)
+	stats := newStats()
+	err := utils.JsonFromFileCreate(fileName, stats)
 	if err != nil {
 		log.Printf("ModSwears: Cannot read stats from file '%s'\n", fileName)
 		return nil, StatsFileReadErr
 	}
-	return &stats, Success
+	return stats, Success
 }
 
 func writeStats(fileName string, stats *AllStats) int {
-	err := utils.SaveJson(fileName, stats)
+	err := utils.JsonToFile(fileName, stats)
 	if err != nil {
 		log.Printf("ModSwears: Cannot write stats to file '%s'\n", fileName)
 		return StatsSaveErr
@@ -167,4 +161,10 @@ func getUserStatsById(users []*UserStats, userId string) *UserStats {
 
 func getMonthKey(month int, year int) string {
 	return fmt.Sprintf("%d.%d", month, year)
+}
+
+func newStats() *AllStats {
+	return &AllStats{
+		Months: map[string]*MonthStats{},
+	}
 }

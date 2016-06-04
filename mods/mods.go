@@ -57,7 +57,7 @@ func NewModContainer() *ModContainer {
 
 func (mc *ModContainer) LoadConfig() bool {
 	filePath := getModConfigFilePath()
-	err := utils.LoadJson(filePath, &mc.modInfos)
+	err := utils.JsonFromFile(filePath, &mc.modInfos)
 	if err != nil {
 		log.Println("ModContainer: cannot load mod config file.")
 		return false

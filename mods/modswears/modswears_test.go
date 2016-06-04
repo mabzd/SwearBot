@@ -8,7 +8,7 @@ import (
 
 func TestConfigIntegrity(t *testing.T) {
 	var config ModSwearsConfig
-	err := utils.LoadJson("../../modswears-config-rename.json", &config)
+	err := utils.JsonFromFile("../../modswears-config-rename.json", &config)
 	if err != nil {
 		t.Fatalf("Loading config failed %v", err)
 	}

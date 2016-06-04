@@ -19,7 +19,7 @@ func CreateTmpFileName(filePrefix string) string {
 	return fileName
 }
 
-func LoadJson(fileName string, in interface{}) error {
+func JsonFromFile(fileName string, in interface{}) error {
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		log.Printf("Cannot read JSON from file '%s': %v\n", fileName, err)
@@ -33,7 +33,19 @@ func LoadJson(fileName string, in interface{}) error {
 	return nil
 }
 
-func SaveJson(fileName string, in interface{}) error {
+func JsonFromFileCreate(fileName string, in interface{}) error {
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		err = JsonToFile(fileName, in)
+		if err != nil {
+			log.Printf("Cannot create not existing file '%s': %v\n", err)
+			return err
+		}
+
+	}
+	return JsonFromFile(fileName, in)
+}
+
+func JsonToFile(fileName string, in interface{}) error {
 	bytes, err := json.Marshal(in)
 	if err != nil {
 		log.Printf("Error when marshaling JSON to file '%s': %v\n", fileName, err)

@@ -7,10 +7,9 @@ import (
 )
 
 const (
-	Success               = 0
-	SettingsFileCreateErr = 31
-	SettingsFileReadErr   = 32
-	SettingsSaveErr       = 33
+	Success             = 0
+	SettingsFileReadErr = 31
+	SettingsSaveErr     = 32
 )
 
 type AllSettings struct {
@@ -133,22 +132,17 @@ func (settings *AllSettings) SetSetting(key string, value string) {
 }
 
 func LoadSettings(fileName string) (*AllSettings, int) {
-	createErr := createSettingsFileIfNotExist(fileName)
-	if createErr != Success {
-		log.Println("Settings: Settings file creation failed.")
-		return nil, SettingsFileCreateErr
-	}
-	var settings AllSettings
-	err := utils.LoadJson(fileName, &settings)
+	settings := NewSettings()
+	err := utils.JsonFromFileCreate(fileName, settings)
 	if err != nil {
 		log.Printf("Settings: Cannot read settings from file '%s'\n", fileName)
 		return nil, SettingsFileReadErr
 	}
-	return &settings, Success
+	return settings, Success
 }
 
 func SaveSettings(fileName string, settings *AllSettings) int {
-	err := utils.SaveJson(fileName, settings)
+	err := utils.JsonToFile(fileName, settings)
 	if err != nil {
 		log.Printf("Settings: Cannot write settings to file '%s'\n", fileName)
 		return SettingsSaveErr

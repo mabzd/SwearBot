@@ -40,7 +40,7 @@ func (mod *ModChoice) Init(state *mods.ModState) bool {
 	var err error
 	mod.state = state
 	configFilePath := mods.GetPath(mod, ConfigFileName)
-	err = utils.LoadJson(configFilePath, mod.config)
+	err = utils.JsonFromFile(configFilePath, mod.config)
 	if err != nil {
 		log.Printf("ModChoice: cannot load config")
 		return false

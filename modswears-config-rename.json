@@ -22,10 +22,8 @@
 	"OnAddRuleConflictErr": "Similar rule already exists!",
 	"OnAddRuleSaveErr": "Error when saving to database!",
 	"OnInvalidWildcardErr": "Invalid wildcard placement!",
-	"OnStatsFileCreateErr": "Error when creating stats file!",
 	"OnStatsFileReadErr": "Error when reading stats file!",
 	"OnStatsSaveErr": "Error when saving to stats file!",
-	"OnSettingsFileCreateErr": "Error when creating settings file!",
 	"OnSettingsFileReadErr": "Error when reading settings file!",
 	"OnSettingsSaveErr": "Error when saving to settings file!"
 }
