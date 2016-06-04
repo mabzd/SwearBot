@@ -112,7 +112,7 @@ func getWords(message string) []string {
 func validateConfig(config *ModChoiceConfig) bool {
 	for _, orKey := range config.OrKeywords {
 		if len(getWords(orKey)) > 1 {
-			log.Printf("ModChoice: or keyword '%s' must be a single word.", orKey)
+			log.Printf("ModChoice: OR keyword '%s' must be a single word.", orKey)
 			return false
 		}
 	}
