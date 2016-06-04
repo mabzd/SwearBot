@@ -1,10 +1,7 @@
-package swearbot
+package bot
 
 import (
 	"../mods"
-	"../mods/modchoice"
-	"../mods/modmention"
-	"../mods/modswears"
 	"fmt"
 	"github.com/nlopes/slack"
 	"log"
@@ -44,17 +41,17 @@ func Run(token string) {
 }
 
 func createModContainer(slackClient *slack.Client) *mods.ModContainer {
-	modContainer := mods.NewModContainer()
-	if !modContainer.LoadConfig() {
+	container := mods.NewModContainer()
+	if !container.LoadConfig() {
+		log.Println("Loading mods config failed.")
 		return nil
 	}
-	modContainer.AddMod(modswears.NewModSwears())
-	modContainer.AddMod(modchoice.NewModChoice())
-	modContainer.AddMod(modmention.NewModMention())
-	if !modContainer.InitMods(slackClient) {
+	registerMods(container)
+	if !container.InitMods(slackClient) {
+		log.Println("Initializing mods failed.")
 		return nil
 	}
-	return modContainer
+	return container
 }
 
 func onConnect(info *slack.Info) {

@@ -1,4 +1,4 @@
-package swearbot
+package bot
 
 import (
 	"testing"

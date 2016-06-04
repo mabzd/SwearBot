@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./swearbot"
+	"./bot"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,7 +19,7 @@ func main() {
 	defer logFile.Close()
 	log.SetOutput(io.MultiWriter(logFile, os.Stdout))
 	token := readSlackToken()
-	swearbot.Run(token)
+	bot.Run(token)
 }
 
 func createLogFile() *os.File {
