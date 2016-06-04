@@ -3,6 +3,7 @@ package swearbot
 import (
 	"../mods"
 	"../mods/modchoice"
+	"../mods/modmention"
 	"../mods/modswears"
 	"fmt"
 	"github.com/nlopes/slack"
@@ -49,6 +50,7 @@ func createModContainer(slackClient *slack.Client) *mods.ModContainer {
 	}
 	modContainer.AddMod(modswears.NewModSwears())
 	modContainer.AddMod(modchoice.NewModChoice())
+	modContainer.AddMod(modmention.NewModMention())
 	if !modContainer.InitMods(slackClient) {
 		return nil
 	}

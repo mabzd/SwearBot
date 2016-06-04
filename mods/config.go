@@ -19,5 +19,10 @@ func NewModInfos() []*ModInfo {
 			Enabled:  true,
 			Priority: 0,
 		},
+		&ModInfo{
+			Name:     "modmention",
+			Enabled:  true,
+			Priority: -100,
+		},
 	}
 }
