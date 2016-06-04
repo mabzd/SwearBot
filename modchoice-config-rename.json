@@ -1,0 +1,6 @@
+{
+	"OrKeywords": ["or"],
+	"ChoiceResponseFormat": ["I choose *{option}*.", "*{option}*!", "I would recommend *{option}*."],
+	"NullChoiceResponses":   ["Choose them all! :-)", "Neither."],
+	"NullChoiceProbability": 0.1
+}

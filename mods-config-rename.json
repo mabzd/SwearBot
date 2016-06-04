@@ -2,6 +2,11 @@
 	{
 		"Name": "modswears",
 		"Enabled": true,
-		"Priority": 1
+		"Priority": 0
+	},
+	{
+		"Name": "modchoice",
+		"Enabled": true,
+		"Priority": 0
 	}
 ]

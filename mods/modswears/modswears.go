@@ -50,7 +50,6 @@ type ModSwearsConfig struct {
 
 	SwearFormat              string
 	OnSwearsFoundResponse    string
-	OnUnknownCommandResponse string
 	OnAddRuleResponse        string
 	OnEmptyRankResponse      string
 	OnSwearNotifyOnResponse  string
@@ -154,7 +153,7 @@ func (mod *ModSwears) ProcessMention(message string, userId string, channelId st
 	if mod.swearNotifyOffRegex.MatchString(message) {
 		return mod.setSwearNotify(userId, channelId, "off")
 	}
-	return mod.config.OnUnknownCommandResponse
+	return ""
 }
 
 func (mod *ModSwears) ProcessMessage(message string, userId string, channelId string) string {

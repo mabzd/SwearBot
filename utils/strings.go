@@ -17,3 +17,13 @@ func ParamFormat(format string, params map[string]string) string {
 	}
 	return format
 }
+
+func ContainsCaseIns(needle string, haystack []string) bool {
+	needle = strings.ToLower(needle)
+	for _, value := range haystack {
+		if needle == strings.ToLower(value) {
+			return true
+		}
+	}
+	return false
+}

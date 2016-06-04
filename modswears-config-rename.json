@@ -7,7 +7,6 @@
 	"SwearNotifyOffRegex": "(?i)^\\s*notify\\s+off\\s*$",
 
 	"SwearFormat": "{index}. *{swear}*",
-	"OnUnknownCommandResponse": "Unknown command.",
 	"OnAddRuleResponse": "Rule '{rule}' added.",
 	"OnSwearsFoundResponse": "{count} swears found: {swears}",
 	"OnEmptyRankResponse": "Rank is empty.",
