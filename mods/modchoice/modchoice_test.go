@@ -36,12 +36,24 @@ func TestGetOptions(t *testing.T) {
 	assertGetOptions(t, "o1 | or o2", []string{"o1", "o2"})
 	assertGetOptions(t, "o1 oror o2", []string{"o1 oror o2"})
 	assertGetOptions(t, "o1 || o2", []string{"o1 || o2"})
+	assertGetOptions(t, "or", []string{})
+	assertGetOptions(t, "|", []string{})
 }
 
 func TestModChoiceResponse(t *testing.T) {
 	mod := createModChoice()
 	assertProcessMention(t, mod, "a or b", []string{"r1 a", "r1 b", "r2"})
 	assertProcessMention(t, mod, "a | b", []string{"r1 a", "r1 b", "r2"})
+}
+
+func TestModChoiceNoResponse(t *testing.T) {
+	mod := createModChoice()
+	assertProcessMention(t, mod, "test test", []string{""})
+	assertProcessMention(t, mod, "testortest", []string{""})
+	assertProcessMention(t, mod, "test|test", []string{""})
+	assertProcessMention(t, mod, "a |  ", []string{""})
+	assertProcessMention(t, mod, "or", []string{""})
+	assertProcessMention(t, mod, "or|", []string{""})
 }
 
 func TestModNullChoiceResponse(t *testing.T) {
