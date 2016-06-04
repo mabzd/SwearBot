@@ -46,7 +46,7 @@ func JsonFromFileCreate(fileName string, in interface{}) error {
 }
 
 func JsonToFile(fileName string, in interface{}) error {
-	bytes, err := json.Marshal(in)
+	bytes, err := json.MarshalIndent(in, "", "    ")
 	if err != nil {
 		log.Printf("Error when marshaling JSON to file '%s': %v\n", fileName, err)
 		return err
