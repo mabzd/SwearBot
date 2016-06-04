@@ -4,6 +4,7 @@ import (
 	"../utils"
 	"github.com/nlopes/slack"
 	"log"
+	"os"
 	"path"
 	"sort"
 	"strings"
@@ -21,13 +22,6 @@ type Mod interface {
 	Init(state *ModState) bool
 	ProcessMention(message string, userId string, channelId string) string
 	ProcessMessage(message string, userId string, channelId string) string
-}
-
-type ModInfo struct {
-	Name     string
-	Enabled  bool
-	Priority int
-	Instance Mod
 }
 
 type ModContainer struct {
@@ -51,13 +45,14 @@ func (a ByModPriority) Less(i, j int) bool {
 
 func NewModContainer() *ModContainer {
 	return &ModContainer{
-		modInfos: []*ModInfo{},
+		modInfos: NewModInfos(),
 	}
 }
 
 func (mc *ModContainer) LoadConfig() bool {
+	os.MkdirAll(ModsDirName, 0777)
 	filePath := getModConfigFilePath()
-	err := utils.JsonFromFile(filePath, &mc.modInfos)
+	err := utils.JsonFromFileCreate(filePath, &mc.modInfos)
 	if err != nil {
 		log.Println("ModContainer: cannot load mod config file.")
 		return false
@@ -91,6 +86,7 @@ func (mc *ModContainer) InitMods(slackClient *slack.Client) bool {
 	modsInitialized := []string{}
 	for _, modInfo := range mc.modInfos {
 		if modInfo.Instance != nil {
+			os.MkdirAll(getModDirPath(modInfo.Instance), 0777)
 			modsRegistered = append(modsRegistered, modInfo.Name)
 			if modInfo.Enabled {
 				modsEnabled = append(modsEnabled, modInfo.Name)
@@ -139,7 +135,11 @@ func (mc *ModContainer) ProcessMessage(
 }
 
 func GetPath(mod Mod, fileName string) string {
-	return path.Join(ModsDirName, mod.Name(), fileName)
+	return path.Join(getModDirPath(mod), fileName)
+}
+
+func getModDirPath(mod Mod) string {
+	return path.Join(ModsDirName, mod.Name())
 }
 
 func (mc *ModContainer) executeOnActiveMod(action func(Mod) string) string {

@@ -14,13 +14,6 @@ const (
 
 var wordSplitRegex *regexp.Regexp = regexp.MustCompile("\\s+")
 
-type ModChoiceConfig struct {
-	OrKeywords            []string
-	ChoiceResponseFormat  []string
-	NullChoiceResponses   []string
-	NullChoiceProbability float32
-}
-
 type ModChoice struct {
 	state  *mods.ModState
 	config *ModChoiceConfig
@@ -28,7 +21,7 @@ type ModChoice struct {
 
 func NewModChoice() *ModChoice {
 	return &ModChoice{
-		config: &ModChoiceConfig{},
+		config: NewModChoiceConfig(),
 	}
 }
 
@@ -40,7 +33,7 @@ func (mod *ModChoice) Init(state *mods.ModState) bool {
 	var err error
 	mod.state = state
 	configFilePath := mods.GetPath(mod, ConfigFileName)
-	err = utils.JsonFromFile(configFilePath, mod.config)
+	err = utils.JsonFromFileCreate(configFilePath, mod.config)
 	if err != nil {
 		log.Printf("ModChoice: cannot load config")
 		return false

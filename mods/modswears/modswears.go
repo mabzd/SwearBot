@@ -40,42 +40,10 @@ type ModSwears struct {
 	statsFileName       string
 }
 
-type ModSwearsConfig struct {
-	AddRuleRegex        string
-	CurrMonthRankRegex  string
-	PrevMonthRankRegex  string
-	TotalRankRegex      string
-	SwearNotifyOnRegex  string
-	SwearNotifyOffRegex string
-
-	SwearFormat              string
-	OnSwearsFoundResponse    string
-	OnAddRuleResponse        string
-	OnEmptyRankResponse      string
-	OnSwearNotifyOnResponse  string
-	OnSwearNotifyOffResponse string
-	MonthlyRankHeaderFormat  string
-	TotalRankHeaderFormat    string
-	RankLineFormat           string
-	MonthNames               []string
-
-	OnUserFetchErr       string
-	OnDictFileReadErr    string
-	OnAddRuleConflictErr string
-	OnAddRuleSaveErr     string
-	OnInvalidWildcardErr string
-
-	OnStatsFileReadErr string
-	OnStatsSaveErr     string
-
-	OnSettingsFileReadErr string
-	OnSettingsSaveErr     string
-}
-
 func NewModSwears() *ModSwears {
 	return &ModSwears{
 		dict:   dictmatch.NewDict(),
-		config: &ModSwearsConfig{},
+		config: NewModSwearsConfig(),
 	}
 }
 
@@ -90,7 +58,7 @@ func (mod *ModSwears) Init(state *mods.ModState) bool {
 	mod.dictFileName = mods.GetPath(mod, DictFileName)
 	mod.statsFileName = mods.GetPath(mod, StatsFileName)
 	configFileName := mods.GetPath(mod, ConfigFileName)
-	err = utils.JsonFromFile(configFileName, mod.config)
+	err = utils.JsonFromFileCreate(configFileName, mod.config)
 	if err != nil {
 		log.Println("ModSwears: cannot load config.")
 		return false
