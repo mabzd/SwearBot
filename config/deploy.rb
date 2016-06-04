@@ -19,7 +19,8 @@ set :linked_files, [
 namespace :app do
   task :compile do
     on roles(:app) do
-      execute "cd #{current_path} && GOPATH=$HOME/go && ./compile.sh"
+      execute "cd #{current_path} && chmod +rwx ./compile.sh"
+      execute "cd #{current_path} && GOPATH=$HOME/go ./compile.sh"
     end
   end
 
