@@ -4,7 +4,8 @@ type ModInfo struct {
 	Name     string
 	Enabled  bool
 	Priority int
-	Instance Mod
+	Instance Mod  `json:"-"`
+	Active   bool `json:"-"`
 }
 
 func NewModInfos() []*ModInfo {

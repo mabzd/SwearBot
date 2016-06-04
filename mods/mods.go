@@ -26,7 +26,6 @@ type Mod interface {
 }
 
 type ModContainer struct {
-	init     bool
 	modInfos []*ModInfo
 }
 
@@ -92,6 +91,7 @@ func (mc *ModContainer) InitMods(slackClient *slack.Client) bool {
 			if modInfo.Enabled {
 				modsEnabled = append(modsEnabled, modInfo.Name)
 				if modInfo.Instance.Init(modState) {
+					modInfo.Active = true
 					modsInitialized = append(modsInitialized, modInfo.Name)
 				} else {
 					log.Printf(
@@ -147,7 +147,7 @@ func getModDirPath(mod Mod) string {
 
 func (mc *ModContainer) executeOnActiveMod(action func(Mod) string) string {
 	for _, modInfo := range mc.modInfos {
-		if modInfo.Instance != nil && modInfo.Enabled {
+		if modInfo.Active {
 			response := action(modInfo.Instance)
 			if response != "" {
 				return response
