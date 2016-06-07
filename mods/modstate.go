@@ -7,8 +7,9 @@ import (
 )
 
 type ModState struct {
-	settings    *settings.AllSettings
-	SlackClient *slack.Client
+	settings      *settings.AllSettings
+	SlackClient   *slack.Client
+	AsyncResponse chan Response
 }
 
 func (s *ModState) GetUserChanSetting(
@@ -57,10 +58,11 @@ func (s *ModState) Save() int {
 	return settings.SaveSettings(filePath, s.settings)
 }
 
-func newModState(slackClient *slack.Client) *ModState {
+func newModState(slackClient *slack.Client, asyncResponse chan Response) *ModState {
 	return &ModState{
-		settings:    settings.NewSettings(),
-		SlackClient: slackClient,
+		settings:      settings.NewSettings(),
+		SlackClient:   slackClient,
+		AsyncResponse: asyncResponse,
 	}
 }
 

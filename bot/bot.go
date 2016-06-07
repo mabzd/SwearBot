@@ -23,6 +23,8 @@ func Run(token string) {
 	go rtm.ManageConnection()
 	for {
 		select {
+		case response := <-modContainer.AsyncResponse:
+			respond(rtm, response.Message, response.ChannelId)
 		case msg := <-rtm.IncomingEvents:
 			switch event := msg.Data.(type) {
 			case *slack.ConnectedEvent:

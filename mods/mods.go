@@ -25,8 +25,14 @@ type Mod interface {
 	ProcessMessage(message string, userId string, channelId string) string
 }
 
+type Response struct {
+	Message   string
+	ChannelId string
+}
+
 type ModContainer struct {
-	modInfos []*ModInfo
+	modInfos      []*ModInfo
+	AsyncResponse chan Response
 }
 
 type ByModPriority []*ModInfo
@@ -45,7 +51,8 @@ func (a ByModPriority) Less(i, j int) bool {
 
 func NewModContainer() *ModContainer {
 	return &ModContainer{
-		modInfos: NewModInfos(),
+		modInfos:      NewModInfos(),
+		AsyncResponse: make(chan Response),
 	}
 }
 
@@ -76,7 +83,7 @@ func (mc *ModContainer) AddMod(mod Mod) bool {
 }
 
 func (mc *ModContainer) InitMods(slackClient *slack.Client) bool {
-	modState := newModState(slackClient)
+	modState := newModState(slackClient, mc.AsyncResponse)
 	if !modState.init() {
 		log.Println("ModContainer: mod state failed to initialize")
 		return false
