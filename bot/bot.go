@@ -2,6 +2,7 @@ package bot
 
 import (
 	"../mods"
+	"../utils"
 	"fmt"
 	"github.com/nlopes/slack"
 	"log"
@@ -12,6 +13,7 @@ var botMentionRegex *regexp.Regexp = nil
 var connected bool = false
 
 func Run(token string) {
+	utils.InitRandSeed()
 	slackClient := slack.New(token)
 	slackClient.SetDebug(false)
 	rtm := slackClient.NewRTM()
