@@ -2,7 +2,6 @@ package utils
 
 import (
 	"math/rand"
-	"time"
 )
 
 func RandSelect(values []string) string {
@@ -25,5 +24,5 @@ func RandEvent(probability float32) bool {
 }
 
 func InitRandSeed() {
-	rand.Seed(time.Now().UTC().UnixNano())
+	rand.Seed(TimeClock.Now().UTC().UnixNano())
 }

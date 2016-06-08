@@ -37,7 +37,7 @@ func JsonFromFileCreate(fileName string, in interface{}) error {
 	if _, err := os.Stat(fileName); os.IsNotExist(err) {
 		err = JsonToFile(fileName, in)
 		if err != nil {
-			log.Printf("Cannot create not existing file '%s': %v\n", err)
+			log.Printf("Cannot create not existing file '%s': %v\n", fileName, err)
 			return err
 		}
 

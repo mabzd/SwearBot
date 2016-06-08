@@ -83,8 +83,9 @@ func (mc *ModContainer) AddMod(mod Mod) bool {
 }
 
 func (mc *ModContainer) InitMods(slackClient *slack.Client) bool {
-	modState := newModState(slackClient, mc.AsyncResponse)
-	if !modState.init() {
+	settingsFilePath := getSettingsFilePath()
+	modState := NewModState(slackClient, mc.AsyncResponse)
+	if !modState.Init(settingsFilePath) {
 		log.Println("ModContainer: mod state failed to initialize")
 		return false
 	}
@@ -195,4 +196,8 @@ func getModInfoByName(modInfos []*ModInfo, name string) *ModInfo {
 
 func getModConfigFilePath() string {
 	return path.Join(ModsDirName, ModConfigFileName)
+}
+
+func getSettingsFilePath() string {
+	return path.Join(ModsDirName, SettingsFileName)
 }

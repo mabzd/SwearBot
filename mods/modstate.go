@@ -3,13 +3,13 @@ package mods
 import (
 	"../settings"
 	"github.com/nlopes/slack"
-	"path"
 )
 
 type ModState struct {
-	settings      *settings.AllSettings
-	SlackClient   *slack.Client
-	AsyncResponse chan Response
+	settings         *settings.AllSettings
+	settingsFilePath string
+	SlackClient      *slack.Client
+	AsyncResponse    chan Response
 }
 
 func (s *ModState) GetUserChanSetting(
@@ -54,11 +54,10 @@ func (s *ModState) SetSetting(key string, value string) {
 }
 
 func (s *ModState) Save() int {
-	filePath := getSettingsFilePath()
-	return settings.SaveSettings(filePath, s.settings)
+	return settings.SaveSettings(s.settingsFilePath, s.settings)
 }
 
-func newModState(slackClient *slack.Client, asyncResponse chan Response) *ModState {
+func NewModState(slackClient *slack.Client, asyncResponse chan Response) *ModState {
 	return &ModState{
 		settings:      settings.NewSettings(),
 		SlackClient:   slackClient,
@@ -66,16 +65,12 @@ func newModState(slackClient *slack.Client, asyncResponse chan Response) *ModSta
 	}
 }
 
-func (s *ModState) init() bool {
-	filePath := getSettingsFilePath()
-	settings, err := settings.LoadSettings(filePath)
+func (s *ModState) Init(settingsFilePath string) bool {
+	settings, err := settings.LoadSettings(settingsFilePath)
 	if err != Success {
 		return false
 	}
 	s.settings = settings
+	s.settingsFilePath = settingsFilePath
 	return true
-}
-
-func getSettingsFilePath() string {
-	return path.Join(ModsDirName, SettingsFileName)
 }

@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -125,7 +124,7 @@ func (mod *ModSwears) ProcessMention(message string, userId string, channelId st
 func (mod *ModSwears) ProcessMessage(message string, userId string, channelId string) string {
 	swears := mod.FindSwears(message)
 	if len(swears) > 0 {
-		now := time.Now()
+		now := utils.TimeClock.Now()
 		err := mod.AddSwearCount(int(now.Month()), now.Year(), userId, len(swears))
 		if err != Success {
 			return getResponseOnErr(err, mod.config)
@@ -145,14 +144,14 @@ func (mod *ModSwears) ProcessMessage(message string, userId string, channelId st
 }
 
 func (mod *ModSwears) getCurrMonthRank() string {
-	now := time.Now()
+	now := utils.TimeClock.Now()
 	month := int(now.Month())
 	year := now.Year()
 	return mod.getRankByMonth(month, year)
 }
 
 func (mod *ModSwears) getPrevMonthRank() string {
-	prevMonth := utils.LastDayOfPrevMonth(time.Now())
+	prevMonth := utils.LastDayOfPrevMonth(utils.TimeClock.Now())
 	month := int(prevMonth.Month())
 	year := prevMonth.Year()
 	return mod.getRankByMonth(month, year)
