@@ -92,12 +92,12 @@ func newTestConfig() *ModIcmConfig {
 	}
 }
 
-func newTestModState(t *testing.T, settingsFilePath string) *mods.ModState {
-	modState := mods.NewModState(nil, nil)
-	if !modState.Init(settingsFilePath) {
-		t.Fatal("Cannot init ModState")
+func newTestState(t *testing.T, settingsFilePath string) mods.State {
+	state := mods.NewState(nil, nil)
+	if !state.Init(settingsFilePath) {
+		t.Fatal("Cannot init mod state")
 	}
-	return modState
+	return state
 }
 
 func newTestModIcm(
@@ -106,11 +106,11 @@ func newTestModIcm(
 	settingsFilePath string,
 	configFilePath string) *ModIcm {
 
-	modState := newTestModState(t, settingsFilePath)
+	state := newTestState(t, settingsFilePath)
 	modIcm := NewModIcm()
 	modIcm.config = config
 	modIcm.configFilePath = configFilePath
-	if !modIcm.Init(modState) {
+	if !modIcm.Init(state) {
 		t.Fatal("Cannot init ModIcm")
 	}
 	return modIcm

@@ -12,7 +12,7 @@ const (
 )
 
 type ModMention struct {
-	state     *mods.ModState
+	state     mods.State
 	config    *ModMentionConfig
 	maxWeight int
 }
@@ -27,7 +27,7 @@ func (mod *ModMention) Name() string {
 	return "modmention"
 }
 
-func (mod *ModMention) Init(state *mods.ModState) bool {
+func (mod *ModMention) Init(state mods.State) bool {
 	mod.state = state
 	configFilePath := mods.GetPath(mod, ConfigFileName)
 	err := utils.JsonFromFileCreate(configFilePath, mod.config)

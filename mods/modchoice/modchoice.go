@@ -15,7 +15,7 @@ const (
 var wordSplitRegex *regexp.Regexp = regexp.MustCompile("\\s+")
 
 type ModChoice struct {
-	state  *mods.ModState
+	state  mods.State
 	config *ModChoiceConfig
 }
 
@@ -29,7 +29,7 @@ func (mod *ModChoice) Name() string {
 	return "modchoice"
 }
 
-func (mod *ModChoice) Init(state *mods.ModState) bool {
+func (mod *ModChoice) Init(state mods.State) bool {
 	var err error
 	mod.state = state
 	configFilePath := mods.GetPath(mod, ConfigFileName)

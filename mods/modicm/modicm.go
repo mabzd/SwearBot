@@ -20,7 +20,7 @@ const (
 )
 
 type ModIcm struct {
-	state             *mods.ModState
+	state             mods.State
 	config            *ModIcmConfig
 	configFilePath    string
 	weatherRegex      *regexp.Regexp
@@ -42,7 +42,7 @@ func (m *ModIcm) Name() string {
 	return "modicm"
 }
 
-func (m *ModIcm) Init(state *mods.ModState) bool {
+func (m *ModIcm) Init(state mods.State) bool {
 	var err error
 	m.state = state
 	err = utils.JsonFromFileCreate(m.configFilePath, m.config)
@@ -102,7 +102,7 @@ func (m *ModIcm) ProcessMessage(message string, userId string, channelId string)
 }
 
 func (m *ModIcm) getImplicitPlaceWeather() string {
-	implictPlaceName, ok := m.state.GetSetting(ImplicitPlaceSetting)
+	implictPlaceName, ok := m.state.Settings().GetSetting(ImplicitPlaceSetting)
 	if !ok {
 		implictPlaceName = m.config.DefaultImplicitPlaceName
 	}
@@ -155,8 +155,8 @@ func (m *ModIcm) setImplicitPlace(placeName string) string {
 	if !ok {
 		return m.config.PlaceNotExistsResponse
 	}
-	m.state.SetSetting(ImplicitPlaceSetting, normalizePlaceName(placeName))
-	errNum := m.state.Save()
+	m.state.Settings().SetSetting(ImplicitPlaceSetting, normalizePlaceName(placeName))
+	errNum := m.state.SaveSettings()
 	if errNum != Success {
 		log.Println("ModIcm: cannot save implicit place '%s' setting.", placeName)
 		return m.config.OnSettingsSaveErr
@@ -171,7 +171,7 @@ func (m *ModIcm) addIcmPlace(icmPlace IcmPlace) string {
 		log.Printf("ModIcm: error on adding ICM place '%s' to settings: %v\n", placeName, err)
 		return m.config.OnSettingsSaveErr
 	}
-	errNum := m.state.Save()
+	errNum := m.state.SaveSettings()
 	if errNum != Success {
 		log.Printf("ModIcm: error on saving settings for ICM place '%s': %v\n", placeName, err)
 		return m.config.OnSettingsSaveErr
@@ -182,7 +182,7 @@ func (m *ModIcm) addIcmPlace(icmPlace IcmPlace) string {
 func (m *ModIcm) getIcmPlace(placeName string) (IcmPlace, bool) {
 	var icmPlace IcmPlace
 	placeSetting := getPlaceSetting(placeName)
-	icmPlaceStr, ok := m.state.GetSetting(placeSetting)
+	icmPlaceStr, ok := m.state.Settings().GetSetting(placeSetting)
 	if !ok {
 		return icmPlace, false
 	}
@@ -200,7 +200,7 @@ func (m *ModIcm) addIcmPlaceToSettings(icmPlace IcmPlace) error {
 	if err != nil {
 		return err
 	}
-	m.state.SetSetting(placeSetting, string(icmPlaceBytes))
+	m.state.Settings().SetSetting(placeSetting, string(icmPlaceBytes))
 	return nil
 }
 
@@ -251,7 +251,7 @@ func (m *ModIcm) validateConfig() bool {
 		log.Println("ModIcm: icm url is empty.")
 		return false
 	}
-	loaded, _ := m.state.GetSetting(DefaultPlacesLoadedSetting)
+	loaded, _ := m.state.Settings().GetSetting(DefaultPlacesLoadedSetting)
 	if loaded != "true" {
 		for _, icmPlace := range m.config.DefaultPlaces {
 			if m.addIcmPlaceToSettings(icmPlace) != nil {
@@ -259,8 +259,8 @@ func (m *ModIcm) validateConfig() bool {
 				return false
 			}
 		}
-		m.state.SetSetting(DefaultPlacesLoadedSetting, "true")
-		errNum := m.state.Save()
+		m.state.Settings().SetSetting(DefaultPlacesLoadedSetting, "true")
+		errNum := m.state.SaveSettings()
 		if errNum != Success {
 			log.Println("ModIcm: cannot save settings.")
 			return false

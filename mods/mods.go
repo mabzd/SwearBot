@@ -20,7 +20,7 @@ const (
 
 type Mod interface {
 	Name() string
-	Init(state *ModState) bool
+	Init(state State) bool
 	ProcessMention(message string, userId string, channelId string) string
 	ProcessMessage(message string, userId string, channelId string) string
 }
@@ -84,8 +84,8 @@ func (mc *ModContainer) AddMod(mod Mod) bool {
 
 func (mc *ModContainer) InitMods(slackClient *slack.Client) bool {
 	settingsFilePath := getSettingsFilePath()
-	modState := NewModState(slackClient, mc.AsyncResponse)
-	if !modState.Init(settingsFilePath) {
+	state := NewState(slackClient, mc.AsyncResponse)
+	if !state.Init(settingsFilePath) {
 		log.Println("ModContainer: mod state failed to initialize")
 		return false
 	}
@@ -98,7 +98,7 @@ func (mc *ModContainer) InitMods(slackClient *slack.Client) bool {
 			modsRegistered = append(modsRegistered, modInfo.Name)
 			if modInfo.Enabled {
 				modsEnabled = append(modsEnabled, modInfo.Name)
-				if modInfo.Instance.Init(modState) {
+				if modInfo.Instance.Init(state) {
 					modInfo.Active = true
 					modsInitialized = append(modsInitialized, modInfo.Name)
 				} else {

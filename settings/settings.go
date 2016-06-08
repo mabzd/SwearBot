@@ -3,7 +3,6 @@ package settings
 import (
 	"../utils"
 	"log"
-	"os"
 )
 
 const (
@@ -11,6 +10,23 @@ const (
 	SettingsFileReadErr = 31
 	SettingsSaveErr     = 32
 )
+
+type Settings interface {
+	GetUserChanSetting(userId string, channelId string, key string) (string, bool)
+	GetUserSetting(userId string, key string) (string, bool)
+	GetChanSetting(channelId string, key string) (string, bool)
+	GetSetting(key string) (string, bool)
+	SetUserChanSetting(userId string, channelId string, key string, value string)
+	SetUserSetting(userId string, key string, value string)
+	SetChanSetting(channelId string, key string, value string)
+	SetSetting(key string, value string)
+}
+
+type SettingsManager interface {
+	Settings
+	Load(fileName string) int
+	Save(fileName string) int
+}
 
 type AllSettings struct {
 	UserSettings map[string]*UserSettings
@@ -131,28 +147,20 @@ func (settings *AllSettings) SetSetting(key string, value string) {
 	settings.Settings[key] = value
 }
 
-func LoadSettings(fileName string) (*AllSettings, int) {
-	settings := NewSettings()
+func (settings *AllSettings) Load(fileName string) int {
 	err := utils.JsonFromFileCreate(fileName, settings)
 	if err != nil {
 		log.Printf("Settings: Cannot read settings from file '%s'\n", fileName)
-		return nil, SettingsFileReadErr
-	}
-	return settings, Success
-}
-
-func SaveSettings(fileName string, settings *AllSettings) int {
-	err := utils.JsonToFile(fileName, settings)
-	if err != nil {
-		log.Printf("Settings: Cannot write settings to file '%s'\n", fileName)
-		return SettingsSaveErr
+		return SettingsFileReadErr
 	}
 	return Success
 }
 
-func createSettingsFileIfNotExist(fileName string) int {
-	if _, err := os.Stat(fileName); os.IsNotExist(err) {
-		return SaveSettings(fileName, NewSettings())
+func (settings *AllSettings) Save(fileName string) int {
+	err := utils.JsonToFile(fileName, settings)
+	if err != nil {
+		log.Printf("Settings: Cannot write settings to file '%s'\n", fileName)
+		return SettingsSaveErr
 	}
 	return Success
 }

@@ -26,7 +26,7 @@ const (
 )
 
 type ModSwears struct {
-	state               *mods.ModState
+	state               mods.State
 	dict                *dictmatch.Dict
 	addRuleRegex        *regexp.Regexp
 	currMonthRankRegex  *regexp.Regexp
@@ -50,7 +50,7 @@ func (mod *ModSwears) Name() string {
 	return "modswears"
 }
 
-func (mod *ModSwears) Init(state *mods.ModState) bool {
+func (mod *ModSwears) Init(state mods.State) bool {
 	var err error
 	var errnum int
 	mod.state = state
@@ -129,7 +129,7 @@ func (mod *ModSwears) ProcessMessage(message string, userId string, channelId st
 		if err != Success {
 			return getResponseOnErr(err, mod.config)
 		}
-		swearNotify, exist := mod.state.GetUserChanSetting(
+		swearNotify, exist := mod.state.Settings().GetUserChanSetting(
 			userId,
 			channelId,
 			SettingSwearNotify)
@@ -182,7 +182,7 @@ func (mod *ModSwears) prepareRank(userStats []*UserStats, rankErr int) string {
 	if len(userStats) == 0 {
 		return mod.config.OnEmptyRankResponse
 	}
-	return fillUserRealNames(userStats, mod.state.SlackClient, mod.config)
+	return fillUserRealNames(userStats, mod.state.SlackClient(), mod.config)
 }
 
 func (mod *ModSwears) addRule(rule string) string {
@@ -198,8 +198,8 @@ func (mod *ModSwears) setSwearNotify(
 	channelId string,
 	value string) string {
 
-	mod.state.SetUserChanSetting(userId, channelId, SettingSwearNotify, value)
-	err := mod.state.Save()
+	mod.state.Settings().SetUserChanSetting(userId, channelId, SettingSwearNotify, value)
+	err := mod.state.SaveSettings()
 	if err != Success {
 		return getResponseOnErr(err, mod.config)
 	}
