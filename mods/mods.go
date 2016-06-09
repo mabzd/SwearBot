@@ -21,8 +21,8 @@ const (
 type Mod interface {
 	Name() string
 	Init(state State) bool
-	ProcessMention(message string, userId string, channelId string) string
-	ProcessMessage(message string, userId string, channelId string) string
+	ProcessMention(message string, userId string, channelId string) *Response
+	ProcessMessage(message string, userId string, channelId string) *Response
 }
 
 type Response struct {
@@ -126,9 +126,9 @@ func (mc *ModContainer) InitMods(slackClient *slack.Client) bool {
 func (mc *ModContainer) ProcessMention(
 	message string,
 	userId string,
-	channelId string) string {
+	channelId string) *Response {
 
-	return mc.executeOnActiveMod(func(mod Mod) string {
+	return mc.executeOnActiveMod(func(mod Mod) *Response {
 		defer recoverMod("ProcessMention", mod.Name(), message, userId, channelId)
 		return mod.ProcessMention(message, userId, channelId)
 	})
@@ -137,9 +137,9 @@ func (mc *ModContainer) ProcessMention(
 func (mc *ModContainer) ProcessMessage(
 	message string,
 	userId string,
-	channelId string) string {
+	channelId string) *Response {
 
-	return mc.executeOnActiveMod(func(mod Mod) string {
+	return mc.executeOnActiveMod(func(mod Mod) *Response {
 		defer recoverMod("ProcessMessage", mod.Name(), message, userId, channelId)
 		return mod.ProcessMessage(message, userId, channelId)
 	})
@@ -153,16 +153,16 @@ func getModDirPath(mod Mod) string {
 	return path.Join(ModsDirName, mod.Name())
 }
 
-func (mc *ModContainer) executeOnActiveMod(action func(Mod) string) string {
+func (mc *ModContainer) executeOnActiveMod(action func(Mod) *Response) *Response {
 	for _, modInfo := range mc.modInfos {
 		if modInfo.Active {
 			response := action(modInfo.Instance)
-			if response != "" {
+			if response != nil {
 				return response
 			}
 		}
 	}
-	return ""
+	return nil
 }
 
 func recoverMod(

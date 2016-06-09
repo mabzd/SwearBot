@@ -5,7 +5,9 @@ import (
 	"../../utils"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,19 +22,22 @@ const (
 )
 
 type ModIcm struct {
-	state             mods.State
-	config            *ModIcmConfig
-	configFilePath    string
-	weatherRegex      *regexp.Regexp
-	placeWeatherRegex *regexp.Regexp
-	addPlaceRegex     *regexp.Regexp
-	removePlaceRegex  *regexp.Regexp
-	implictPlaceRegex *regexp.Regexp
+	state                mods.State
+	config               *ModIcmConfig
+	configFilePath       string
+	lastModelDateRegex   *regexp.Regexp
+	weatherRegex         *regexp.Regexp
+	placeWeatherRegex    *regexp.Regexp
+	addPlaceRegex        *regexp.Regexp
+	removePlaceRegex     *regexp.Regexp
+	implictPlaceRegex    *regexp.Regexp
+	getLastModelDateFunc func(string) string
 }
 
 func NewModIcm() *ModIcm {
 	modIcm := &ModIcm{
-		config: NewModIcmConfig(),
+		config:               NewModIcmConfig(),
+		getLastModelDateFunc: getLastModelDate,
 	}
 	modIcm.configFilePath = mods.GetPath(modIcm, ConfigFileName)
 	return modIcm
@@ -48,6 +53,10 @@ func (m *ModIcm) Init(state mods.State) bool {
 	err = utils.JsonFromFileCreate(m.configFilePath, m.config)
 	if err != nil {
 		log.Println("ModIcm: cannot load config.")
+		return false
+	}
+	m.lastModelDateRegex = compileRegex(m.config.LastModelDateRegex, "LastModelDateRegex", 1)
+	if m.lastModelDateRegex == nil {
 		return false
 	}
 	m.weatherRegex = compileRegex(m.config.WeatherRegex, "WeatherRegex", 0)
@@ -73,52 +82,95 @@ func (m *ModIcm) Init(state mods.State) bool {
 	return m.validateConfig()
 }
 
-func (m *ModIcm) ProcessMention(message string, userId string, channelId string) string {
+func (m *ModIcm) ProcessMention(
+	message string,
+	userId string,
+	channelId string) *mods.Response {
+
 	var groups [][]string
 	if m.weatherRegex.MatchString(message) {
-		return m.getImplicitPlaceWeather()
+		return m.asyncImplicitPlaceWeather(channelId)
 	}
 	groups = m.placeWeatherRegex.FindAllStringSubmatch(message, 1)
 	if groups != nil {
-		return m.getPlaceWeather(groups[0][1])
+		return m.asyncPlaceWeather(groups[0][1], channelId)
 	}
 	groups = m.addPlaceRegex.FindAllStringSubmatch(message, 1)
 	if groups != nil {
-		return m.addNewPlace(groups[0][1], groups[0][2], groups[0][3])
+		return response(m.addNewPlace(groups[0][1], groups[0][2], groups[0][3]), channelId)
 	}
 	groups = m.removePlaceRegex.FindAllStringSubmatch(message, 1)
 	if groups != nil {
-		return m.removePlace(groups[0][1])
+		return response(m.removePlace(groups[0][1]), channelId)
 	}
 	groups = m.implictPlaceRegex.FindAllStringSubmatch(message, 1)
 	if groups != nil {
-		return m.setImplicitPlace(groups[0][1])
+		return response(m.setImplicitPlace(groups[0][1]), channelId)
 	}
-	return ""
+	return nil
 }
 
-func (m *ModIcm) ProcessMessage(message string, userId string, channelId string) string {
-	return ""
+func (m *ModIcm) ProcessMessage(
+	message string,
+	userId string,
+	channelId string) *mods.Response {
+
+	return nil
 }
 
-func (m *ModIcm) getImplicitPlaceWeather() string {
+func response(message string, channelId string) *mods.Response {
+	if message == "" {
+		return nil
+	}
+	return &mods.Response{
+		Message:   message,
+		ChannelId: channelId,
+	}
+}
+
+func (m *ModIcm) asyncImplicitPlaceWeather(channelId string) *mods.Response {
 	implictPlaceName, ok := m.state.Settings().GetSetting(ImplicitPlaceSetting)
 	if !ok {
 		implictPlaceName = m.config.DefaultImplicitPlaceName
 	}
 	if implictPlaceName == "" {
-		return m.config.NoImplicitPlaceResponse
+		return &mods.Response{
+			Message:   m.config.NoImplicitPlaceResponse,
+			ChannelId: channelId,
+		}
 	}
-	return m.getPlaceWeather(implictPlaceName)
+	return m.asyncPlaceWeather(implictPlaceName, channelId)
 }
 
-func (m *ModIcm) getPlaceWeather(placeName string) string {
+func (m *ModIcm) asyncPlaceWeather(placeName string, channelId string) *mods.Response {
 	placeName = trimWhitespaces(placeName)
 	icmPlace, ok := m.getIcmPlace(placeName)
 	if !ok {
-		return formatPlaceNameResponse(m.config.NoPlaceResponse, placeName)
+		return &mods.Response{
+			Message:   formatPlaceNameResponse(m.config.NoPlaceResponse, placeName),
+			ChannelId: channelId,
+		}
 	}
-	return formatUrlResponse(m.config.IcmUrl, icmPlace.X, icmPlace.Y)
+	go func() {
+		dateResponse := m.getLastModelDateFunc(m.config.IcmLastModelDateUrl)
+		groups := m.lastModelDateRegex.FindAllStringSubmatch(dateResponse, 1)
+		if groups == nil {
+			log.Printf(
+				"ModIcm: cannot find last ICM model date in response: %v\n",
+				dateResponse)
+			m.state.AsyncResponse(mods.Response{
+				Message:   m.config.OnGetWeatherErr,
+				ChannelId: channelId,
+			})
+			return
+		}
+		date := groups[0][1]
+		m.state.AsyncResponse(mods.Response{
+			Message:   formatUrlResponse(m.config.IcmUrl, date, icmPlace.X, icmPlace.Y),
+			ChannelId: channelId,
+		})
+	}()
+	return &mods.Response{}
 }
 
 func (m *ModIcm) addNewPlace(placeName string, xStr string, yStr string) string {
@@ -212,9 +264,24 @@ func (m *ModIcm) addIcmPlaceToSettings(icmPlace IcmPlace) error {
 	return nil
 }
 
-func formatUrlResponse(format string, x int, y int) string {
+func getLastModelDate(url string) string {
+	resp, httpErr := http.Get(url)
+	if httpErr != nil {
+		log.Printf("ModIcm: cannot get last ICM model date from '%s': %v\n", url, httpErr)
+		return ""
+	}
+	defer resp.Body.Close()
+	body, ioErr := ioutil.ReadAll(resp.Body)
+	if ioErr != nil {
+		fmt.Printf("ModIcm: cannot read HTTP last ICM model date response: %v\n", ioErr)
+		return ""
+	}
+	return string(body)
+}
+
+func formatUrlResponse(format string, date string, x int, y int) string {
 	params := map[string]string{
-		"date": utils.TimeClock.Now().Format("20060102"),
+		"date": date,
 		"x":    strconv.Itoa(x),
 		"y":    strconv.Itoa(y),
 	}

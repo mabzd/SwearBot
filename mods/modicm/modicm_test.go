@@ -5,13 +5,10 @@ import (
 	"../../utils"
 	"os"
 	"testing"
+	"time"
 )
 
-func init() {
-	utils.TimeClock = utils.MockClock{
-		CurrentTime: utils.NewLocalDate(2006, 1, 2),
-	}
-}
+var testAsyncChan chan mods.Response = make(chan mods.Response)
 
 func TestResponses(t *testing.T) {
 	settingsFilePath := createTmpSettingsPath(t)
@@ -21,25 +18,25 @@ func TestResponses(t *testing.T) {
 
 	config := newTestConfig()
 	modIcm := newTestModIcm(t, config, settingsFilePath, configFilePath)
-	assertProcessMention(t, modIcm, "i", "d=20060102x=3y=4")
-	assertProcessMention(t, modIcm, "i PlaceA", "d=20060102x=1y=2")
-	assertProcessMention(t, modIcm, "i PlaceB", "d=20060102x=3y=4")
-	assertProcessMention(t, modIcm, "i PlaceC", "NoPlace 'PlaceC'")
-	assertProcessMention(t, modIcm, "ia PlaceC 5 6", "PlaceAdded 'PlaceC'")
-	assertProcessMention(t, modIcm, "i PlaceC", "d=20060102x=5y=6")
-	assertProcessMention(t, modIcm, "ia  _a-B cd   7 8", "PlaceAdded '_a-B cd'")
-	assertProcessMention(t, modIcm, "i _a-B cd", "d=20060102x=7y=8")
-	assertProcessMention(t, modIcm, "ia PlaceC 9 10", "PlaceExists 'PlaceC'")
-	assertProcessMention(t, modIcm, "ir PlaceD", "PlaceNotExists 'PlaceD'")
-	assertProcessMention(t, modIcm, "is PlaceD", "PlaceNotExists 'PlaceD'")
-	assertProcessMention(t, modIcm, "is PlaceA", "ImplicitPlaceSet 'PlaceA'")
-	assertProcessMention(t, modIcm, "i", "d=20060102x=1y=2")
-	assertProcessMention(t, modIcm, "ir  placea ", "PlaceRemoved 'placea'")
-	assertProcessMention(t, modIcm, "i", "NoPlace 'PlaceA'")
-	assertProcessMention(t, modIcm, "i  pLACeb ", "d=20060102x=3y=4")
-	assertProcessMention(t, modIcm, "ia  PlacEb  0 0", "PlaceExists 'PlacEb'")
-	assertProcessMention(t, modIcm, "is plACEB", "ImplicitPlaceSet 'plACEB'")
-	assertProcessMention(t, modIcm, "i", "d=20060102x=3y=4")
+	assertProcessMention(t, modIcm, "i", "d=20060102x=3y=4", true)
+	assertProcessMention(t, modIcm, "i PlaceA", "d=20060102x=1y=2", true)
+	assertProcessMention(t, modIcm, "i PlaceB", "d=20060102x=3y=4", true)
+	assertProcessMention(t, modIcm, "i PlaceC", "NoPlace 'PlaceC'", false)
+	assertProcessMention(t, modIcm, "ia PlaceC 5 6", "PlaceAdded 'PlaceC'", false)
+	assertProcessMention(t, modIcm, "i PlaceC", "d=20060102x=5y=6", true)
+	assertProcessMention(t, modIcm, "ia  _a-B cd   7 8", "PlaceAdded '_a-B cd'", false)
+	assertProcessMention(t, modIcm, "i _a-B cd", "d=20060102x=7y=8", true)
+	assertProcessMention(t, modIcm, "ia PlaceC 9 10", "PlaceExists 'PlaceC'", false)
+	assertProcessMention(t, modIcm, "ir PlaceD", "PlaceNotExists 'PlaceD'", false)
+	assertProcessMention(t, modIcm, "is PlaceD", "PlaceNotExists 'PlaceD'", false)
+	assertProcessMention(t, modIcm, "is PlaceA", "ImplicitPlaceSet 'PlaceA'", false)
+	assertProcessMention(t, modIcm, "i", "d=20060102x=1y=2", true)
+	assertProcessMention(t, modIcm, "ir  placea ", "PlaceRemoved 'placea'", false)
+	assertProcessMention(t, modIcm, "i", "NoPlace 'PlaceA'", false)
+	assertProcessMention(t, modIcm, "i  pLACeb ", "d=20060102x=3y=4", true)
+	assertProcessMention(t, modIcm, "ia  PlacEb  0 0", "PlaceExists 'PlacEb'", false)
+	assertProcessMention(t, modIcm, "is plACEB", "ImplicitPlaceSet 'plACEB'", false)
+	assertProcessMention(t, modIcm, "i", "d=20060102x=3y=4", true)
 }
 
 func TestNoImplicitPlace(t *testing.T) {
@@ -51,7 +48,19 @@ func TestNoImplicitPlace(t *testing.T) {
 	config := newTestConfig()
 	config.DefaultImplicitPlaceName = ""
 	modIcm := newTestModIcm(t, config, settingsFilePath, configFilePath)
-	assertProcessMention(t, modIcm, "i", "NoImplicitPlace")
+	assertProcessMention(t, modIcm, "i", "NoImplicitPlace", false)
+}
+
+func TestGetWeatherError(t *testing.T) {
+	settingsFilePath := createTmpSettingsPath(t)
+	configFilePath := createTmpConfigPath(t)
+	defer os.Remove(settingsFilePath)
+	defer os.Remove(configFilePath)
+
+	config := newTestConfig()
+	config.LastModelDateRegex = "(not-matching-regex)"
+	modIcm := newTestModIcm(t, config, settingsFilePath, configFilePath)
+	assertProcessMention(t, modIcm, "i", "GetWeatherErr", true)
 }
 
 func TestMultipleModInitializations(t *testing.T) {
@@ -62,21 +71,23 @@ func TestMultipleModInitializations(t *testing.T) {
 
 	config := newTestConfig()
 	m1 := newTestModIcm(t, config, settingsFilePath, configFilePath)
-	assertProcessMention(t, m1, "i", "d=20060102x=3y=4")
-	assertProcessMention(t, m1, "i PlaceC", "NoPlace 'PlaceC'")
-	assertProcessMention(t, m1, "ia PlaceC 5 6", "PlaceAdded 'PlaceC'")
-	assertProcessMention(t, m1, "is PlaceA", "ImplicitPlaceSet 'PlaceA'")
-	assertProcessMention(t, m1, "ir PlaceB", "PlaceRemoved 'PlaceB'")
+	assertProcessMention(t, m1, "i", "d=20060102x=3y=4", true)
+	assertProcessMention(t, m1, "i PlaceC", "NoPlace 'PlaceC'", false)
+	assertProcessMention(t, m1, "ia PlaceC 5 6", "PlaceAdded 'PlaceC'", false)
+	assertProcessMention(t, m1, "is PlaceA", "ImplicitPlaceSet 'PlaceA'", false)
+	assertProcessMention(t, m1, "ir PlaceB", "PlaceRemoved 'PlaceB'", false)
 
 	m2 := newTestModIcm(t, config, settingsFilePath, configFilePath)
-	assertProcessMention(t, m2, "i", "d=20060102x=1y=2")
-	assertProcessMention(t, m2, "i PlaceB", "NoPlace 'PlaceB'")
-	assertProcessMention(t, m2, "i PlaceC", "d=20060102x=5y=6")
+	assertProcessMention(t, m2, "i", "d=20060102x=1y=2", true)
+	assertProcessMention(t, m2, "i PlaceB", "NoPlace 'PlaceB'", false)
+	assertProcessMention(t, m2, "i PlaceC", "d=20060102x=5y=6", true)
 }
 
 func newTestConfig() *ModIcmConfig {
 	return &ModIcmConfig{
 		IcmUrl:                   "d={date}x={x}y={y}",
+		IcmLastModelDateUrl:      "url",
+		LastModelDateRegex:       "<date>([0-9]+)</date>",
 		WeatherRegex:             "^i$",
 		PlaceWeatherRegex:        "^i ([a-zA-Z0-9-_ ]+)$",
 		AddPlaceRegex:            "^ia ([a-zA-Z0-9-_ ]+) ([0-9]+) ([0-9]+)$",
@@ -91,6 +102,7 @@ func newTestConfig() *ModIcmConfig {
 		PlaceAddedResponse:       "PlaceAdded '{place}'",
 		PlaceRemovedResponse:     "PlaceRemoved '{place}'",
 		ImplictPlaceSetResponse:  "ImplicitPlaceSet '{place}'",
+		OnGetWeatherErr:          "GetWeatherErr",
 		OnSettingsSaveErr:        "SettingsSaveErr",
 		DefaultImplicitPlaceName: "PlaceB",
 		DefaultPlaces: []IcmPlace{
@@ -101,7 +113,7 @@ func newTestConfig() *ModIcmConfig {
 }
 
 func newTestState(t *testing.T, settingsFilePath string) mods.State {
-	state := mods.NewState(nil, nil)
+	state := mods.NewState(nil, testAsyncChan)
 	if !state.Init(settingsFilePath) {
 		t.Fatal("Cannot init mod state")
 	}
@@ -118,15 +130,43 @@ func newTestModIcm(
 	modIcm := NewModIcm()
 	modIcm.config = config
 	modIcm.configFilePath = configFilePath
+	modIcm.getLastModelDateFunc = func(x string) string { return "<date>20060102</date>" }
 	if !modIcm.Init(state) {
 		t.Fatal("Cannot init ModIcm")
 	}
 	return modIcm
 }
 
-func assertProcessMention(t *testing.T, m *ModIcm, message string, expected string) {
+func assertProcessMention(
+	t *testing.T,
+	m *ModIcm,
+	message string,
+	expected string,
+	async bool) {
+
 	actual := m.ProcessMention(message, "u1", "c1")
-	if actual != expected {
+	if actual == nil {
+		t.Errorf("Message '%s' expected response, got nil", message)
+		return
+	}
+	if async {
+		if actual.Message != "" {
+			t.Errorf(
+				"Message '%s' expected empty response for async call, got '%s'",
+				message,
+				actual.Message)
+		}
+		// Pass controll to async go routiness
+		time.Sleep(1)
+		select {
+		case response := <-testAsyncChan:
+			actual = &response
+		default:
+			t.Errorf("Message '%s' expected async response, got nothing", message)
+			return
+		}
+	}
+	if actual.Message != expected {
 		t.Errorf("Message '%s' expected response '%s', got '%s'", message, expected, actual)
 	}
 }

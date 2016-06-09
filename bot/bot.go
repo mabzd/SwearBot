@@ -70,7 +70,7 @@ func onMessage(
 	modContainer *mods.ModContainer) {
 
 	if connected {
-		response := ""
+		var response *mods.Response = nil
 		message := event.Text
 		userId := event.User
 		channelId := event.Channel
@@ -80,7 +80,9 @@ func onMessage(
 		} else {
 			response = modContainer.ProcessMessage(message, userId, channelId)
 		}
-		respond(rtm, response, channelId)
+		if response != nil {
+			respond(rtm, response.Message, response.ChannelId)
+		}
 	}
 }
 

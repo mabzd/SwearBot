@@ -48,12 +48,12 @@ func TestModChoiceResponse(t *testing.T) {
 
 func TestModChoiceNoResponse(t *testing.T) {
 	mod := createModChoice()
-	assertProcessMention(t, mod, "test test", []string{""})
-	assertProcessMention(t, mod, "testortest", []string{""})
-	assertProcessMention(t, mod, "test|test", []string{""})
-	assertProcessMention(t, mod, "a |  ", []string{""})
-	assertProcessMention(t, mod, "or", []string{""})
-	assertProcessMention(t, mod, "or|", []string{""})
+	assertNilProcessMention(t, mod, "test test")
+	assertNilProcessMention(t, mod, "testortest")
+	assertNilProcessMention(t, mod, "test|test")
+	assertNilProcessMention(t, mod, "a |  ")
+	assertNilProcessMention(t, mod, "or")
+	assertNilProcessMention(t, mod, "or|")
 }
 
 func TestModNullChoiceResponse(t *testing.T) {
@@ -99,8 +99,12 @@ func assertProcessMention(
 	possibleExpected []string) {
 
 	actual := mod.ProcessMention(message, "u1", "c1")
+	if actual == nil {
+		t.Errorf("Message: '%s': expected response, got nil", message)
+		return
+	}
 	for _, expected := range possibleExpected {
-		if actual == expected {
+		if actual.Message == expected {
 			return
 		}
 	}
@@ -109,4 +113,15 @@ func assertProcessMention(
 		possibleExpected,
 		message,
 		actual)
+}
+
+func assertNilProcessMention(
+	t *testing.T,
+	mod *ModChoice,
+	message string) {
+
+	actual := mod.ProcessMention(message, "u1", "c1")
+	if actual != nil {
+		t.Errorf("Message '%s': expected nil, got '%s'", message, actual.Message)
+	}
 }

@@ -98,49 +98,68 @@ func (mod *ModSwears) Init(state mods.State) bool {
 	return true
 }
 
-func (mod *ModSwears) ProcessMention(message string, userId string, channelId string) string {
+func (mod *ModSwears) ProcessMention(
+	message string,
+	userId string,
+	channelId string) *mods.Response {
+
 	if mod.currMonthRankRegex.MatchString(message) {
-		return mod.getCurrMonthRank()
+		return response(mod.getCurrMonthRank(), channelId)
 	}
 	if mod.prevMonthRankRegex.MatchString(message) {
-		return mod.getPrevMonthRank()
+		return response(mod.getPrevMonthRank(), channelId)
 	}
 	if mod.totalRankRegex.MatchString(message) {
-		return mod.getTotalRank()
+		return response(mod.getTotalRank(), channelId)
 	}
 	rules := mod.addRuleRegex.FindAllStringSubmatch(message, 1)
 	if rules != nil {
-		return mod.addRule(rules[0][1])
+		return response(mod.addRule(rules[0][1]), channelId)
 	}
 	if mod.swearNotifyOnRegex.MatchString(message) {
-		return mod.setSwearNotify(userId, channelId, "on")
+		return response(mod.setSwearNotify(userId, channelId, "on"), channelId)
 	}
 	if mod.swearNotifyOffRegex.MatchString(message) {
-		return mod.setSwearNotify(userId, channelId, "off")
+		return response(mod.setSwearNotify(userId, channelId, "off"), channelId)
 	}
-	return ""
+	return nil
 }
 
-func (mod *ModSwears) ProcessMessage(message string, userId string, channelId string) string {
+func (mod *ModSwears) ProcessMessage(
+	message string,
+	userId string,
+	channelId string) *mods.Response {
+
 	swears := mod.FindSwears(message)
 	if len(swears) > 0 {
 		now := utils.TimeClock.Now()
 		err := mod.AddSwearCount(int(now.Month()), now.Year(), userId, len(swears))
 		if err != Success {
-			return getResponseOnErr(err, mod.config)
+			return response(getErrMessage(err, mod.config), channelId)
 		}
 		swearNotify, exist := mod.state.Settings().GetUserChanSetting(
 			userId,
 			channelId,
 			SettingSwearNotify)
 		if exist && swearNotify == "on" {
-			return formatSwearsResponse(
+			responseMessage := formatSwearsResponse(
 				mod.config.OnSwearsFoundResponse,
 				mod.config.SwearFormat,
 				swears)
+			return response(responseMessage, channelId)
 		}
 	}
-	return ""
+	return nil
+}
+
+func response(message string, channelId string) *mods.Response {
+	if message == "" {
+		return nil
+	}
+	return &mods.Response{
+		Message:   message,
+		ChannelId: channelId,
+	}
 }
 
 func (mod *ModSwears) getCurrMonthRank() string {
@@ -177,7 +196,7 @@ func (mod *ModSwears) getRankByMonth(month int, year int) string {
 
 func (mod *ModSwears) prepareRank(userStats []*UserStats, rankErr int) string {
 	if rankErr != Success {
-		return getResponseOnErr(rankErr, mod.config)
+		return getErrMessage(rankErr, mod.config)
 	}
 	if len(userStats) == 0 {
 		return mod.config.OnEmptyRankResponse
@@ -188,7 +207,7 @@ func (mod *ModSwears) prepareRank(userStats []*UserStats, rankErr int) string {
 func (mod *ModSwears) addRule(rule string) string {
 	err := mod.AddRule(rule)
 	if err != Success {
-		return getResponseOnErr(err, mod.config)
+		return getErrMessage(err, mod.config)
 	}
 	return formatAddRuleResponse(mod.config.OnAddRuleResponse, rule)
 }
@@ -201,7 +220,7 @@ func (mod *ModSwears) setSwearNotify(
 	mod.state.Settings().SetUserChanSetting(userId, channelId, SettingSwearNotify, value)
 	err := mod.state.SaveSettings()
 	if err != Success {
-		return getResponseOnErr(err, mod.config)
+		return getErrMessage(err, mod.config)
 	}
 	if value == "on" {
 		return mod.config.OnSwearNotifyOnResponse
@@ -323,7 +342,7 @@ func formatRankLine(lineFormat string, user string, count int, index int) string
 }
 
 //TODO: move settings responses to some general config
-func getResponseOnErr(err int, config *ModSwearsConfig) string {
+func getErrMessage(err int, config *ModSwearsConfig) string {
 	switch err {
 	case DictFileReadErr:
 		return config.OnDictFileReadErr

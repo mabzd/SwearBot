@@ -44,21 +44,24 @@ func (mod *ModChoice) Init(state mods.State) bool {
 func (mod *ModChoice) ProcessMention(
 	message string,
 	userId string,
-	channelId string) string {
+	channelId string) *mods.Response {
 
 	options := getOptions(message, mod.config.OrKeywords)
 	if len(options) > 1 {
-		return mod.choose(options)
+		return &mods.Response{
+			Message:   mod.choose(options),
+			ChannelId: channelId,
+		}
 	}
-	return ""
+	return nil
 }
 
 func (mod *ModChoice) ProcessMessage(
 	message string,
 	userId string,
-	channelId string) string {
+	channelId string) *mods.Response {
 
-	return ""
+	return nil
 }
 
 func (mod *ModChoice) choose(options []string) string {

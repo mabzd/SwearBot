@@ -2,6 +2,8 @@ package modicm
 
 type ModIcmConfig struct {
 	IcmUrl                   string
+	IcmLastModelDateUrl      string
+	LastModelDateRegex       string
 	WeatherRegex             string
 	PlaceWeatherRegex        string
 	AddPlaceRegex            string
@@ -16,6 +18,7 @@ type ModIcmConfig struct {
 	PlaceAddedResponse       string
 	PlaceRemovedResponse     string
 	ImplictPlaceSetResponse  string
+	OnGetWeatherErr          string
 	OnSettingsSaveErr        string
 	DefaultImplicitPlaceName string
 	DefaultPlaces            []IcmPlace
@@ -30,11 +33,13 @@ type IcmPlace struct {
 func NewModIcmConfig() *ModIcmConfig {
 	return &ModIcmConfig{
 		IcmUrl:                   "http://www.meteo.pl/um/metco/mgram_pict.php?ntype=0u&fdate={date}&row={y}&col={x}&lang=en",
+		IcmLastModelDateUrl:      "http://meteo.pl/xml_um_date.php",
+		LastModelDateRegex:       "<act_model_date>\\s*([0-9]+)\\s*</act_model_date>",
 		WeatherRegex:             "(?i)^\\s*icm\\s*$",
-		PlaceWeatherRegex:        "(?i)^\\s*icm\\s+([a-zA-Z0-9-_ ]+)\\s*$",
-		AddPlaceRegex:            "(?i)^\\s*icm\\s+add\\s+([a-zA-Z0-9-_ ]+)\\s+([0-9]+)\\s+([0-9]+)\\s*$",
-		RemovePlaceRegex:         "(?i)^\\s*icm\\s+remove\\s+([a-zA-Z0-9-_ ]+)\\s*$",
-		ImplictPlaceRegex:        "(?i)^\\s*icm\\s+set\\s+([a-zA-Z0-9-_ ]+)\\s*$",
+		PlaceWeatherRegex:        "(?i)^\\s*icm\\s+([^\\s]+)\\s*$",
+		AddPlaceRegex:            "(?i)^\\s*icm\\s+add\\s+([^\\s]+)\\s+([0-9]+)\\s+([0-9]+)\\s*$",
+		RemovePlaceRegex:         "(?i)^\\s*icm\\s+remove\\s+([^\\s]+)\\s*$",
+		ImplictPlaceRegex:        "(?i)^\\s*icm\\s+set\\s+([^\\s]+)\\s*$",
 		NoImplicitPlaceResponse:  "No place defined, run 'icm set PLACE_NAME'.",
 		NoPlaceResponse:          "No place '{place}' defined, run 'icm add {place} X Y'.",
 		PlaceExistsResponse:      "Place '{place}' already added, run 'icm remove {place}.",
@@ -45,12 +50,13 @@ func NewModIcmConfig() *ModIcmConfig {
 		PlaceRemovedResponse:     "Place '{place}' removed",
 		ImplictPlaceSetResponse:  "Place '{place}' set as default.",
 		OnSettingsSaveErr:        "Error when saving to settings file!",
+		OnGetWeatherErr:          "Error when fetching weather data.",
 		DefaultImplicitPlaceName: "Poznań",
 		DefaultPlaces: []IcmPlace{
 			IcmPlace{Name: "Białystok", X: 285, Y: 379},
 			IcmPlace{Name: "Bydgoszcz", X: 199, Y: 381},
 			IcmPlace{Name: "Gdańsk", X: 210, Y: 346},
-			IcmPlace{Name: "Gorzów Wlkp", X: 152, Y: 390},
+			IcmPlace{Name: "GorzówWlkp", X: 152, Y: 390},
 			IcmPlace{Name: "Katowice", X: 215, Y: 461},
 			IcmPlace{Name: "Kielce", X: 244, Y: 443},
 			IcmPlace{Name: "Kraków", X: 232, Y: 466},
@@ -64,7 +70,7 @@ func NewModIcmConfig() *ModIcmConfig {
 			IcmPlace{Name: "Toruń", X: 209, Y: 383},
 			IcmPlace{Name: "Warszawa", X: 250, Y: 406},
 			IcmPlace{Name: "Wrocław", X: 181, Y: 436},
-			IcmPlace{Name: "Zielona Góra", X: 155, Y: 412},
+			IcmPlace{Name: "ZielonaGóra", X: 155, Y: 412},
 		},
 	}
 }

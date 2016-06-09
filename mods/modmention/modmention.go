@@ -41,18 +41,21 @@ func (mod *ModMention) Init(state mods.State) bool {
 func (mod *ModMention) ProcessMention(
 	message string,
 	userId string,
-	channelId string) string {
+	channelId string) *mods.Response {
 
 	distribution := rand.Intn(mod.maxWeight)
-	return mod.getReaction(distribution)
+	return &mods.Response{
+		Message:   mod.getReaction(distribution),
+		ChannelId: channelId,
+	}
 }
 
 func (mod *ModMention) ProcessMessage(
 	message string,
 	userId string,
-	channelId string) string {
+	channelId string) *mods.Response {
 
-	return ""
+	return nil
 }
 
 func (mod *ModMention) validateConfig() bool {
