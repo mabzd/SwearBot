@@ -72,6 +72,11 @@ func TestSettingSettings(t *testing.T) {
 	assertGetSetting(t, settings, "k1", "v1u")
 	assertGetSetting(t, settings, "k2", "v2")
 	assertNotGetSetting(t, settings, "k3")
+
+	assertRemoveSetting(t, settings, "k1")
+	assertNotGetSetting(t, settings, "k1")
+	assertGetSetting(t, settings, "k2", "v2")
+	assertNotRemoveSetting(t, settings, "k3")
 }
 
 func TestSettingUserSettings(t *testing.T) {
@@ -86,6 +91,13 @@ func TestSettingUserSettings(t *testing.T) {
 	assertGetUserSetting(t, settings, "u2", "k1", "u2v1")
 	assertNotGetUserSetting(t, settings, "u2", "k2")
 	assertNotGetUserSetting(t, settings, "u3", "k1")
+
+	assertRemoveUserSetting(t, settings, "u1", "k1")
+	assertNotGetUserSetting(t, settings, "u1", "k1")
+	assertGetUserSetting(t, settings, "u1", "k2", "u1v2")
+	assertGetUserSetting(t, settings, "u2", "k1", "u2v1")
+	assertNotRemoveUserSetting(t, settings, "u1", "k3")
+	assertNotRemoveUserSetting(t, settings, "u3", "k1")
 }
 
 func TestSettingChanSettings(t *testing.T) {
@@ -100,6 +112,13 @@ func TestSettingChanSettings(t *testing.T) {
 	assertGetChanSetting(t, settings, "c2", "k1", "c2v1")
 	assertNotGetChanSetting(t, settings, "c2", "k2")
 	assertNotGetChanSetting(t, settings, "c3", "k1")
+
+	assertRemoveChanSetting(t, settings, "c1", "k1")
+	assertNotGetChanSetting(t, settings, "c1", "k1")
+	assertGetChanSetting(t, settings, "c1", "k2", "c1v2")
+	assertGetChanSetting(t, settings, "c2", "k1", "c2v1")
+	assertNotRemoveChanSetting(t, settings, "c1", "k3")
+	assertNotRemoveChanSetting(t, settings, "c3", "k1")
 }
 
 func TestSettingUserChanSettings(t *testing.T) {
@@ -117,6 +136,15 @@ func TestSettingUserChanSettings(t *testing.T) {
 	assertNotGetUserChanSetting(t, settings, "u1", "c2", "k2")
 	assertNotGetUserChanSetting(t, settings, "u2", "c1", "k2")
 	assertNotGetUserChanSetting(t, settings, "u3", "c1", "k1")
+
+	assertRemoveUserChanSetting(t, settings, "u1", "c1", "k1")
+	assertNotGetUserChanSetting(t, settings, "u1", "c1", "k1")
+	assertGetUserChanSetting(t, settings, "u1", "c1", "k2", "u1c1v2")
+	assertGetUserChanSetting(t, settings, "u1", "c2", "k1", "u1c2v1")
+	assertGetUserChanSetting(t, settings, "u2", "c1", "k1", "u2c1v1")
+	assertNotRemoveUserChanSetting(t, settings, "u1", "c1", "k3")
+	assertNotRemoveUserChanSetting(t, settings, "u1", "c3", "k1")
+	assertNotRemoveUserChanSetting(t, settings, "u3", "c1", "k1")
 }
 
 func createTmpSettingsPath(t *testing.T) string {
@@ -282,5 +310,93 @@ func assertNotGetUserChanSetting(
 			channelId,
 			key,
 			actual)
+	}
+}
+
+func assertRemoveSetting(t *testing.T, settings *AllSettings, key string) {
+	if !settings.RemoveSetting(key) {
+		t.Fatalf("Setting key '%s': key expected to exist", key)
+	}
+}
+
+func assertNotRemoveSetting(t *testing.T, settings *AllSettings, key string) {
+	if settings.RemoveSetting(key) {
+		t.Fatalf("Setting key '%s': key expected to not exist", key)
+	}
+}
+
+func assertRemoveUserSetting(
+	t *testing.T,
+	settings *AllSettings,
+	userId string,
+	key string) {
+
+	if !settings.RemoveUserSetting(userId, key) {
+		t.Fatalf("User '%s' setting key '%s': key expected to exist", userId, key)
+	}
+}
+
+func assertNotRemoveUserSetting(
+	t *testing.T,
+	settings *AllSettings,
+	userId string,
+	key string) {
+
+	if settings.RemoveUserSetting(userId, key) {
+		t.Fatalf("User '%s' setting key '%s': key expected to not exist", userId, key)
+	}
+}
+
+func assertRemoveChanSetting(
+	t *testing.T,
+	settings *AllSettings,
+	channelId string,
+	key string) {
+
+	if !settings.RemoveChanSetting(channelId, key) {
+		t.Fatalf("Channel '%s' setting key '%s': key expected to exist", channelId, key)
+	}
+}
+
+func assertNotRemoveChanSetting(
+	t *testing.T,
+	settings *AllSettings,
+	channelId string,
+	key string) {
+
+	if settings.RemoveChanSetting(channelId, key) {
+		t.Fatalf("Channel '%s' setting key '%s': key expected to not exist", channelId, key)
+	}
+}
+
+func assertRemoveUserChanSetting(
+	t *testing.T,
+	settings *AllSettings,
+	userId string,
+	channelId string,
+	key string) {
+
+	if !settings.RemoveUserChanSetting(userId, channelId, key) {
+		t.Fatalf(
+			"User '%s' channel '%s' setting key '%s': key expected to exist",
+			userId,
+			channelId,
+			key)
+	}
+}
+
+func assertNotRemoveUserChanSetting(
+	t *testing.T,
+	settings *AllSettings,
+	userId string,
+	channelId string,
+	key string) {
+
+	if settings.RemoveUserChanSetting(userId, channelId, key) {
+		t.Fatalf(
+			"User '%s' channel '%s' setting key '%s': key expected to not exist",
+			userId,
+			channelId,
+			key)
 	}
 }

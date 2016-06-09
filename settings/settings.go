@@ -20,6 +20,10 @@ type Settings interface {
 	SetUserSetting(userId string, key string, value string)
 	SetChanSetting(channelId string, key string, value string)
 	SetSetting(key string, value string)
+	RemoveUserChanSetting(userId string, chanelId string, key string) bool
+	RemoveUserSetting(userId string, key string) bool
+	RemoveChanSetting(channelId string, key string) bool
+	RemoveSetting(key string) bool
 }
 
 type SettingsManager interface {
@@ -145,6 +149,49 @@ func (settings *AllSettings) SetChanSetting(
 
 func (settings *AllSettings) SetSetting(key string, value string) {
 	settings.Settings[key] = value
+}
+
+func (settings *AllSettings) RemoveUserChanSetting(
+	userId string,
+	chanelId string,
+	key string) bool {
+
+	userSettings, userOk := settings.UserSettings[userId]
+	if userOk {
+		chanSettings, chanOk := userSettings.ChanSettings[chanelId]
+		if chanOk {
+			_, ok := chanSettings.Settings[key]
+			delete(chanSettings.Settings, key)
+			return ok
+		}
+	}
+	return false
+}
+
+func (settings *AllSettings) RemoveUserSetting(userId string, key string) bool {
+	userSettings, userOk := settings.UserSettings[userId]
+	if userOk {
+		_, ok := userSettings.Settings[key]
+		delete(userSettings.Settings, key)
+		return ok
+	}
+	return false
+}
+
+func (settings *AllSettings) RemoveChanSetting(channelId string, key string) bool {
+	chanSettings, chanOk := settings.ChanSettings[channelId]
+	if chanOk {
+		_, ok := chanSettings.Settings[key]
+		delete(chanSettings.Settings, key)
+		return ok
+	}
+	return false
+}
+
+func (settings *AllSettings) RemoveSetting(key string) bool {
+	_, ok := settings.Settings[key]
+	delete(settings.Settings, key)
+	return ok
 }
 
 func (settings *AllSettings) Load(fileName string) int {
