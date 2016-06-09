@@ -24,16 +24,22 @@ func TestResponses(t *testing.T) {
 	assertProcessMention(t, modIcm, "i", "d=20060102x=3y=4")
 	assertProcessMention(t, modIcm, "i PlaceA", "d=20060102x=1y=2")
 	assertProcessMention(t, modIcm, "i PlaceB", "d=20060102x=3y=4")
-	assertProcessMention(t, modIcm, "i PlaceC", "NoPlace")
-	assertProcessMention(t, modIcm, "ia PlaceC 5 6", "PlaceAdded")
+	assertProcessMention(t, modIcm, "i PlaceC", "NoPlace 'PlaceC'")
+	assertProcessMention(t, modIcm, "ia PlaceC 5 6", "PlaceAdded 'PlaceC'")
 	assertProcessMention(t, modIcm, "i PlaceC", "d=20060102x=5y=6")
-	assertProcessMention(t, modIcm, "ia _a-B cd 7 8", "PlaceAdded")
+	assertProcessMention(t, modIcm, "ia  _a-B cd   7 8", "PlaceAdded '_a-B cd'")
 	assertProcessMention(t, modIcm, "i _a-B cd", "d=20060102x=7y=8")
-	assertProcessMention(t, modIcm, "ia PlaceC 9 10", "PlaceExists")
-	assertProcessMention(t, modIcm, "ir PlaceD", "PlaceNotExists")
-	assertProcessMention(t, modIcm, "is PlaceD", "PlaceNotExists")
-	assertProcessMention(t, modIcm, "is PlaceA", "ImplicitPlaceSet")
+	assertProcessMention(t, modIcm, "ia PlaceC 9 10", "PlaceExists 'PlaceC'")
+	assertProcessMention(t, modIcm, "ir PlaceD", "PlaceNotExists 'PlaceD'")
+	assertProcessMention(t, modIcm, "is PlaceD", "PlaceNotExists 'PlaceD'")
+	assertProcessMention(t, modIcm, "is PlaceA", "ImplicitPlaceSet 'PlaceA'")
 	assertProcessMention(t, modIcm, "i", "d=20060102x=1y=2")
+	assertProcessMention(t, modIcm, "ir  placea ", "PlaceRemoved 'placea'")
+	assertProcessMention(t, modIcm, "i", "NoPlace 'PlaceA'")
+	assertProcessMention(t, modIcm, "i  pLACeb ", "d=20060102x=3y=4")
+	assertProcessMention(t, modIcm, "ia  PlacEb  0 0", "PlaceExists 'PlacEb'")
+	assertProcessMention(t, modIcm, "is plACEB", "ImplicitPlaceSet 'plACEB'")
+	assertProcessMention(t, modIcm, "i", "d=20060102x=3y=4")
 }
 
 func TestNoImplicitPlace(t *testing.T) {
@@ -57,12 +63,14 @@ func TestMultipleModInitializations(t *testing.T) {
 	config := newTestConfig()
 	m1 := newTestModIcm(t, config, settingsFilePath, configFilePath)
 	assertProcessMention(t, m1, "i", "d=20060102x=3y=4")
-	assertProcessMention(t, m1, "i PlaceC", "NoPlace")
-	assertProcessMention(t, m1, "ia PlaceC 5 6", "PlaceAdded")
-	assertProcessMention(t, m1, "is PlaceA", "ImplicitPlaceSet")
+	assertProcessMention(t, m1, "i PlaceC", "NoPlace 'PlaceC'")
+	assertProcessMention(t, m1, "ia PlaceC 5 6", "PlaceAdded 'PlaceC'")
+	assertProcessMention(t, m1, "is PlaceA", "ImplicitPlaceSet 'PlaceA'")
+	assertProcessMention(t, m1, "ir PlaceB", "PlaceRemoved 'PlaceB'")
 
 	m2 := newTestModIcm(t, config, settingsFilePath, configFilePath)
 	assertProcessMention(t, m2, "i", "d=20060102x=1y=2")
+	assertProcessMention(t, m2, "i PlaceB", "NoPlace 'PlaceB'")
 	assertProcessMention(t, m2, "i PlaceC", "d=20060102x=5y=6")
 }
 
@@ -75,14 +83,14 @@ func newTestConfig() *ModIcmConfig {
 		RemovePlaceRegex:         "^ir ([a-zA-Z0-9-_ ]+)$",
 		ImplictPlaceRegex:        "^is ([a-zA-Z0-9-_ ]+)$",
 		NoImplicitPlaceResponse:  "NoImplicitPlace",
-		NoPlaceResponse:          "NoPlace",
-		PlaceExistsResponse:      "PlaceExists",
-		PlaceNotExistsResponse:   "PlaceNotExists",
+		NoPlaceResponse:          "NoPlace '{place}'",
+		PlaceExistsResponse:      "PlaceExists '{place}'",
+		PlaceNotExistsResponse:   "PlaceNotExists '{place}'",
 		InvalidXCoordResponse:    "InvalidXCoord",
 		InvalidYCoordResponse:    "InvalidYCoord",
-		PlaceAddedResponse:       "PlaceAdded",
-		PlaceRemovedResponse:     "PlaceRemoved",
-		ImplictPlaceSetResponse:  "ImplicitPlaceSet",
+		PlaceAddedResponse:       "PlaceAdded '{place}'",
+		PlaceRemovedResponse:     "PlaceRemoved '{place}'",
+		ImplictPlaceSetResponse:  "ImplicitPlaceSet '{place}'",
 		OnSettingsSaveErr:        "SettingsSaveErr",
 		DefaultImplicitPlaceName: "PlaceB",
 		DefaultPlaces: []IcmPlace{

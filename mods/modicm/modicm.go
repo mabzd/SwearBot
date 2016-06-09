@@ -113,17 +113,19 @@ func (m *ModIcm) getImplicitPlaceWeather() string {
 }
 
 func (m *ModIcm) getPlaceWeather(placeName string) string {
+	placeName = trimWhitespaces(placeName)
 	icmPlace, ok := m.getIcmPlace(placeName)
 	if !ok {
-		return m.config.NoPlaceResponse
+		return formatPlaceNameResponse(m.config.NoPlaceResponse, placeName)
 	}
 	return formatUrlResponse(m.config.IcmUrl, icmPlace.X, icmPlace.Y)
 }
 
 func (m *ModIcm) addNewPlace(placeName string, xStr string, yStr string) string {
+	placeName = trimWhitespaces(placeName)
 	_, ok := m.getIcmPlace(placeName)
 	if ok {
-		return m.config.PlaceExistsResponse
+		return formatPlaceNameResponse(m.config.PlaceExistsResponse, placeName)
 	}
 	x, errX := strconv.Atoi(xStr)
 	if errX != nil {
@@ -134,7 +136,7 @@ func (m *ModIcm) addNewPlace(placeName string, xStr string, yStr string) string 
 		return m.config.InvalidYCoordResponse
 	}
 	icmPlace := IcmPlace{
-		Name: trimWhitespaces(placeName),
+		Name: placeName,
 		X:    x,
 		Y:    y,
 	}
@@ -142,20 +144,26 @@ func (m *ModIcm) addNewPlace(placeName string, xStr string, yStr string) string 
 }
 
 func (m *ModIcm) removePlace(placeName string) string {
-	_, ok := m.getIcmPlace(placeName)
-	if !ok {
-		return m.config.PlaceNotExistsResponse
+	placeName = trimWhitespaces(placeName)
+	placeSetting := getPlaceSetting(placeName)
+	if !m.state.Settings().RemoveSetting(placeSetting) {
+		return formatPlaceNameResponse(m.config.PlaceNotExistsResponse, placeName)
 	}
-	// TODO: implement
-	return "Not implemented yet"
+	errNum := m.state.SaveSettings()
+	if errNum != Success {
+		log.Printf("ModIcm: cannot save settings for removed ICM place '%s'\n", placeName)
+		return m.config.OnSettingsSaveErr
+	}
+	return formatPlaceNameResponse(m.config.PlaceRemovedResponse, placeName)
 }
 
 func (m *ModIcm) setImplicitPlace(placeName string) string {
+	placeName = trimWhitespaces(placeName)
 	_, ok := m.getIcmPlace(placeName)
 	if !ok {
-		return m.config.PlaceNotExistsResponse
+		return formatPlaceNameResponse(m.config.PlaceNotExistsResponse, placeName)
 	}
-	m.state.Settings().SetSetting(ImplicitPlaceSetting, normalizePlaceName(placeName))
+	m.state.Settings().SetSetting(ImplicitPlaceSetting, placeName)
 	errNum := m.state.SaveSettings()
 	if errNum != Success {
 		log.Println("ModIcm: cannot save implicit place '%s' setting.", placeName)
