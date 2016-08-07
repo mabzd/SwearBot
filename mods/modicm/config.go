@@ -32,7 +32,7 @@ type IcmPlace struct {
 
 func NewModIcmConfig() *ModIcmConfig {
 	return &ModIcmConfig{
-		IcmUrl:                   "http://www.meteo.pl/um/metco/mgram_pict.php?ntype=0u&fdate={date}&row={y}&col={x}&lang=en",
+		IcmUrl:                   "{place} http://www.meteo.pl/um/metco/mgram_pict.php?ntype=0u&fdate={date}&row={y}&col={x}&lang=en",
 		IcmLastModelDateUrl:      "http://meteo.pl/xml_um_date.php",
 		LastModelDateRegex:       "<act_model_date>\\s*([0-9]+)\\s*</act_model_date>",
 		WeatherRegex:             "(?i)^\\s*icm\\s*$",
@@ -40,7 +40,7 @@ func NewModIcmConfig() *ModIcmConfig {
 		AddPlaceRegex:            "(?i)^\\s*icm\\s+add\\s+([^\\s]+)\\s+([0-9]+)\\s+([0-9]+)\\s*$",
 		RemovePlaceRegex:         "(?i)^\\s*icm\\s+remove\\s+([^\\s]+)\\s*$",
 		ImplictPlaceRegex:        "(?i)^\\s*icm\\s+set\\s+([^\\s]+)\\s*$",
-		NoImplicitPlaceResponse:  "No place defined, run 'icm set PLACE_NAME'.",
+		NoImplicitPlaceResponse:  "No implicit place defined, run 'icm set PLACE_NAME'.",
 		NoPlaceResponse:          "No place '{place}' defined, run 'icm add {place} X Y'.",
 		PlaceExistsResponse:      "Place '{place}' already added, run 'icm remove {place}.",
 		PlaceNotExistsResponse:   "Place '{place}' does not exist, run 'icm add {place} X Y'.",

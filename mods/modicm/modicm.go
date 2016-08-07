@@ -166,7 +166,7 @@ func (m *ModIcm) asyncPlaceWeather(placeName string, channelId string) *mods.Res
 		}
 		date := groups[0][1]
 		m.state.AsyncResponse(mods.Response{
-			Message:   formatUrlResponse(m.config.IcmUrl, date, icmPlace.X, icmPlace.Y),
+			Message:   formatUrlResponse(m.config.IcmUrl, date, icmPlace),
 			ChannelId: channelId,
 		})
 	}()
@@ -279,11 +279,12 @@ func getLastModelDate(url string) string {
 	return string(body)
 }
 
-func formatUrlResponse(format string, date string, x int, y int) string {
+func formatUrlResponse(format string, date string, icmPlace IcmPlace) string {
 	params := map[string]string{
-		"date": date,
-		"x":    strconv.Itoa(x),
-		"y":    strconv.Itoa(y),
+		"date":  date,
+		"place": icmPlace.Name,
+		"x":     strconv.Itoa(icmPlace.X),
+		"y":     strconv.Itoa(icmPlace.Y),
 	}
 	return utils.ParamFormat(format, params)
 }
