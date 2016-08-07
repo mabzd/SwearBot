@@ -12,6 +12,7 @@ set :linked_files, [
   'bin/mods/settings.json',
   'bin/mods/modchoice/config.json',
   'bin/mods/modmention/config.json',
+  'bin/mods/modicm/config.json',
   'bin/mods/modswears/config.json',
   'bin/mods/modswears/stats.json',
   'bin/mods/modswears/swears.txt']
