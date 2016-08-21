@@ -6,7 +6,7 @@ application_files = [
   'bin/mods/modswears/stats.json',
   'bin/mods/modswears/swears.txt']
 
-uploadable_files = [
+downloadable_files = [
   'bin/token.txt',
   'bin/mods/config.json',
   'bin/mods/modchoice/config.json',
@@ -14,7 +14,7 @@ uploadable_files = [
   'bin/mods/modicm/config.json',
   'bin/mods/modswears/config.json']
 
-linked_files = application_files + uploadable_files
+linked_files = application_files + downloadable_files
 
 set :application, "swearbot"
 set :repo_url, "git@github.com:mabzd/SwearBot.git"
@@ -49,7 +49,7 @@ namespace :app do
   task :download_shared do
     on roles(:app) do
       FileUtils::mkdir_p "./shared"
-      uploadable_files.each do |file_path|
+      downloadable_files.each do |file_path|
         dir = File.dirname(file_path)
         FileUtils::mkdir_p "./shared/#{dir}"
         download! "#{shared_path}/#{file_path}", "./shared/#{dir}"
