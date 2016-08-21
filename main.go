@@ -10,14 +10,17 @@ import (
 )
 
 const (
-	LogFileName   = "log.txt"
-	TokenFileName = "token.txt"
+	LogFileName     = "log.txt"
+	TokenFileName   = "token.txt"
+	VersionFileName = "version.txt"
 )
 
 func main() {
 	var logFile *os.File = createLogFile()
 	defer logFile.Close()
 	log.SetOutput(io.MultiWriter(logFile, os.Stdout))
+	version := readVersion()
+	log.Printf(" * Application start, version: %s", version)
 	token := readSlackToken()
 	bot.Run(token)
 }
@@ -38,6 +41,15 @@ func readSlackToken() string {
 	bytes, err := ioutil.ReadFile(TokenFileName)
 	if err != nil {
 		log.Fatalf("Cannot read slack token file '%s': %s", TokenFileName, err)
+	}
+	return strings.Trim(string(bytes), "\r\n ")
+}
+
+func readVersion() string {
+	bytes, err := ioutil.ReadFile(VersionFileName)
+	if err != nil {
+		log.Printf("Cannot read version file '%s': %s", TokenFileName, err)
+		return "unknown"
 	}
 	return strings.Trim(string(bytes), "\r\n ")
 }
