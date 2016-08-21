@@ -35,7 +35,7 @@ namespace :app do
 
   task :version do
     on roles(:app) do
-      execute "cd #{repo_path} && ./version.sh > #{current_path}/bin/version.txt"
+      execute "#{current_path}/version.sh > #{current_path}/bin/version.txt"
     end
   end
 end
