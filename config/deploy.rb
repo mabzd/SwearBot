@@ -35,6 +35,7 @@ namespace :app do
 
   task :version do
     on roles(:app) do
+      execute "chmod +x #{current_path}/version.sh"
       execute "#{current_path}/version.sh > #{current_path}/bin/version.txt"
     end
   end
