@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -280,11 +281,16 @@ func getLastModelDate(url string) string {
 }
 
 func formatUrlResponse(format string, date string, icmPlace IcmPlace) string {
+	d, _ := time.ParseInLocation("2006010215", date, time.Local)
 	params := map[string]string{
 		"date":  date,
 		"place": icmPlace.Name,
 		"x":     strconv.Itoa(icmPlace.X),
 		"y":     strconv.Itoa(icmPlace.Y),
+		"year":  d.Format("2006"),
+		"month": d.Format("01"),
+		"day":   d.Format("02"),
+		"hour":  d.Format("15"),
 	}
 	return utils.ParamFormat(format, params)
 }

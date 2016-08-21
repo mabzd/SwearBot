@@ -32,7 +32,7 @@ type IcmPlace struct {
 
 func NewModIcmConfig() *ModIcmConfig {
 	return &ModIcmConfig{
-		IcmUrl:                   "{place} http://www.meteo.pl/um/metco/mgram_pict.php?ntype=0u&fdate={date}&row={y}&col={x}&lang=en",
+		IcmUrl:                   "*{place}*, {year}-{month}-{day} {hour}:00 http://www.meteo.pl/um/metco/mgram_pict.php?ntype=0u&fdate={date}&row={y}&col={x}&lang=en",
 		IcmLastModelDateUrl:      "http://meteo.pl/xml_um_date.php",
 		LastModelDateRegex:       "<act_model_date>\\s*([0-9]+)\\s*</act_model_date>",
 		WeatherRegex:             "(?i)^\\s*icm\\s*$",
