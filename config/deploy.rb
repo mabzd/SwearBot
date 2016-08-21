@@ -32,8 +32,15 @@ namespace :app do
       end
     end
   end
+
+  task :version do
+    on roles(:app) do
+      execute "cd #{repo_path} && ./version.sh > #{current_path}/bin/version.txt"
+    end
+  end
 end
 
 after "deploy", "app:compile"
+after "deploy", "app:version"
 after "deploy", "app:stop"
 after "deploy", "app:start"
